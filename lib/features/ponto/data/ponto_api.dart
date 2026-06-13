@@ -37,4 +37,47 @@ class PontoApi {
     }
     return todos;
   }
+
+  Future<PontoInteresse> criar({
+    required String caminhoId,
+    required String tipo,
+    String? nome,
+    String? descricao,
+    required double latitude,
+    required double longitude,
+  }) async {
+    final resp = await _dio.post(
+      '/bff/pontos-interesse',
+      data: {
+        'caminhoId': caminhoId,
+        'tipo': tipo,
+        'nome': ?nome,
+        'descricao': ?descricao,
+        'latitude': latitude,
+        'longitude': longitude,
+      },
+    );
+    return PontoInteresse.fromJson(resp.data as Map<String, dynamic>);
+  }
+
+  /// Adiciona evidencia (foto ja no storage). O APP valida a proximidade (<50m)
+  /// e recalcula o nivel de confianca do ponto.
+  Future<void> adicionarEvidencia({
+    required String pontoId,
+    required String fotoUrl,
+    required String tipoEvidencia,
+    required double latCaptura,
+    required double lngCaptura,
+  }) async {
+    await _dio.post(
+      '/bff/pontos-interesse/evidencia',
+      data: {
+        'pontoId': pontoId,
+        'fotoUrl': fotoUrl,
+        'tipoEvidencia': tipoEvidencia,
+        'latCaptura': latCaptura,
+        'lngCaptura': lngCaptura,
+      },
+    );
+  }
 }

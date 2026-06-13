@@ -88,7 +88,7 @@ class _AventurasScreenState extends State<AventurasScreen> {
                   .join(' • '),
             ),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.go('/aventuras/${aventura.id}/mapa'),
+            onTap: () => context.go('/aventuras/${aventura.id}'),
           ),
         );
       },

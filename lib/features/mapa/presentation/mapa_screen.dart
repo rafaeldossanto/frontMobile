@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/network/dio_client.dart';
+import '../../ponto/data/midia_api.dart';
 import '../../ponto/data/ponto_api.dart';
 import '../../ponto/domain/ponto_interesse.dart';
+import '../../ponto/presentation/criar_ponto_sheet.dart';
 import '../../ponto/presentation/nivel_cores.dart';
 import '../data/location_service.dart';
 
-/// Mapa escuro centralizado na localizacao atual. Quando recebe um
-/// [aventuraId], tambem plota os pontos de interesse da aventura, coloridos
-/// pelo nivel de confianca; tocar num ponto abre o detalhe.
+/// Mapa escuro centralizado na localizacao atual. Com [aventuraId], plota os
+/// pontos da aventura (coloridos por nivel de confianca), permite criar ponto
+/// (toque longo) e adicionar evidencia por foto (tap no ponto).
 class MapaScreen extends StatefulWidget {
   const MapaScreen({super.key, this.aventuraId});
 
@@ -26,10 +29,13 @@ class _MapaScreenState extends State<MapaScreen> {
 
   final _mapController = MapController();
   final _locationService = LocationService();
+  final _picker = ImagePicker();
 
   LatLng? _posicao;
   bool _localizando = true;
   List<PontoInteresse> _pontos = const [];
+
+  PontoApi get _pontoApi => PontoApi(context.read<DioClient>().dio);
 
   @override
   void initState() {
@@ -57,20 +63,74 @@ class _MapaScreenState extends State<MapaScreen> {
 
   Future<void> _carregarPontos(String aventuraId) async {
     try {
-      final pontos = await PontoApi(context.read<DioClient>().dio)
-          .pontosDaAventura(aventuraId);
+      final pontos = await _pontoApi.pontosDaAventura(aventuraId);
       if (!mounted) {
         return;
       }
       setState(() => _pontos = pontos);
       if (_posicao == null && pontos.isNotEmpty) {
-        _mapController.move(
-          LatLng(pontos.first.latitude, pontos.first.longitude),
-          14,
-        );
+        _mapController.move(LatLng(pontos.first.latitude, pontos.first.longitude), 14);
       }
     } catch (_) {
       // Sem pontos no mapa — aventura pode nao ter caminho/ponto ainda.
+    }
+  }
+
+  Future<void> _criarPonto(LatLng local) async {
+    final aventuraId = widget.aventuraId;
+    if (aventuraId == null) {
+      return;
+    }
+    final criado = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => CriarPontoSheet(
+        aventuraId: aventuraId,
+        latitude: local.latitude,
+        longitude: local.longitude,
+      ),
+    );
+    if (criado == true) {
+      await _carregarPontos(aventuraId);
+    }
+  }
+
+  Future<void> _adicionarEvidencia(PontoInteresse ponto) async {
+    final foto = await _picker.pickImage(source: ImageSource.camera, imageQuality: 70);
+    if (foto == null) {
+      return;
+    }
+    final pos = await _locationService.posicaoAtual();
+    if (!mounted) {
+      return;
+    }
+    if (pos == null) {
+      _aviso('Ative a localizacao para registrar a evidencia');
+      return;
+    }
+    _aviso('Enviando evidencia...');
+    try {
+      final dio = context.read<DioClient>().dio;
+      final url = await MidiaApi(dio).uploadFoto(foto.path);
+      await PontoApi(dio).adicionarEvidencia(
+        pontoId: ponto.id,
+        fotoUrl: url,
+        tipoEvidencia: 'VISTA',
+        latCaptura: pos.latitude,
+        lngCaptura: pos.longitude,
+      );
+      if (widget.aventuraId != null) {
+        await _carregarPontos(widget.aventuraId!);
+      }
+      _aviso('Evidencia adicionada');
+    } catch (_) {
+      _aviso('Nao foi possivel adicionar a evidencia (precisa estar a <50m)');
+    }
+  }
+
+  void _aviso(String msg) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     }
   }
 
@@ -88,10 +148,7 @@ class _MapaScreenState extends State<MapaScreen> {
                 Icon(Icons.place, color: corPorNivel(ponto.nivelConfianca)),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    ponto.nome ?? ponto.tipo,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
+                  child: Text(ponto.nome ?? ponto.tipo, style: Theme.of(context).textTheme.titleLarge),
                 ),
               ],
             ),
@@ -118,6 +175,15 @@ class _MapaScreenState extends State<MapaScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _adicionarEvidencia(ponto);
+              },
+              icon: const Icon(Icons.add_a_photo),
+              label: const Text('Adicionar evidencia'),
+            ),
           ],
         ),
       ),
@@ -126,9 +192,10 @@ class _MapaScreenState extends State<MapaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final temAventura = widget.aventuraId != null;
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.aventuraId == null ? 'Mapa' : 'Pontos da aventura'),
+        title: Text(temAventura ? 'Pontos da aventura' : 'Mapa'),
         actions: [
           IconButton(
             tooltip: 'Minha localizacao',
@@ -144,6 +211,7 @@ class _MapaScreenState extends State<MapaScreen> {
             options: MapOptions(
               initialCenter: _posicao ?? _centroFallback,
               initialZoom: _posicao != null ? 15 : 11,
+              onLongPress: temAventura ? (_, local) => _criarPonto(local) : null,
             ),
             children: [
               TileLayer(
@@ -160,11 +228,7 @@ class _MapaScreenState extends State<MapaScreen> {
                         height: 36,
                         child: GestureDetector(
                           onTap: () => _mostrarPonto(ponto),
-                          child: Icon(
-                            Icons.place,
-                            color: corPorNivel(ponto.nivelConfianca),
-                            size: 32,
-                          ),
+                          child: Icon(Icons.place, color: corPorNivel(ponto.nivelConfianca), size: 32),
                         ),
                       ),
                   ],
@@ -176,16 +240,26 @@ class _MapaScreenState extends State<MapaScreen> {
                       point: _posicao!,
                       width: 40,
                       height: 40,
-                      child: Icon(
-                        Icons.my_location,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 32,
-                      ),
+                      child: Icon(Icons.my_location, color: Theme.of(context).colorScheme.primary, size: 32),
                     ),
                   ],
                 ),
             ],
           ),
+          if (temAventura)
+            const Positioned(
+              bottom: 16,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Card(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Text('Toque e segure no mapa para marcar um ponto'),
+                  ),
+                ),
+              ),
+            ),
           if (_localizando)
             const Positioned(
               top: 12,

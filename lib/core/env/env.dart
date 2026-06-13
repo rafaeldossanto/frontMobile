@@ -6,4 +6,6 @@ class Env {
   const Env._();
 
   static String get apiBaseUrl => dotenv.get('API_BASE_URL');
+
+  static String get midiaBaseUrl => dotenv.get('MIDIA_BASE_URL');
 }

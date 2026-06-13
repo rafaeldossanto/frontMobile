@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/network/dio_client.dart';
+import '../data/regiao_api.dart';
+import '../domain/regiao.dart';
 import 'aventura_provider.dart';
 
-/// Bottom sheet de criacao de aventura. regiaoId e digitado a mao porque ainda
-/// nao ha cadastro/endpoint de regioes — precisa ser um id que exista no APP.
+/// Bottom sheet de criacao de aventura. A regiao vem de um seletor carregado de
+/// GET /bff/regioes; envia o id selecionado no POST.
 class CriarAventuraSheet extends StatefulWidget {
   const CriarAventuraSheet({super.key, required this.usuarioId});
 
@@ -17,26 +20,53 @@ class CriarAventuraSheet extends StatefulWidget {
 class _CriarAventuraSheetState extends State<CriarAventuraSheet> {
   final _formKey = GlobalKey<FormState>();
   final _destinoController = TextEditingController();
-  final _regiaoController = TextEditingController();
+
+  List<Regiao> _regioes = const [];
+  Regiao? _regiaoSelecionada;
+  bool _carregandoRegioes = true;
+
   String _visibilidade = 'PRIVADA';
   bool _salvando = false;
 
   @override
+  void initState() {
+    super.initState();
+    _carregarRegioes();
+  }
+
+  @override
   void dispose() {
     _destinoController.dispose();
-    _regiaoController.dispose();
     super.dispose();
   }
 
+  Future<void> _carregarRegioes() async {
+    try {
+      final regioes = await RegiaoApi(context.read<DioClient>().dio).listar();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _regioes = regioes;
+        _carregandoRegioes = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _carregandoRegioes = false);
+    }
+  }
+
   Future<void> _salvar() async {
-    if (!_formKey.currentState!.validate()) {
+    if (!_formKey.currentState!.validate() || _regiaoSelecionada == null) {
       return;
     }
     setState(() => _salvando = true);
     final provider = context.read<AventuraProvider>();
     final ok = await provider.criar(
       usuarioId: widget.usuarioId,
-      regiaoId: _regiaoController.text.trim(),
+      regiaoId: _regiaoSelecionada!.id,
       destino: _destinoController.text.trim(),
       visibilidade: _visibilidade,
     );
@@ -74,15 +104,7 @@ class _CriarAventuraSheetState extends State<CriarAventuraSheet> {
                   (v == null || v.trim().isEmpty) ? 'Informe o destino' : null,
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _regiaoController,
-              decoration: const InputDecoration(
-                labelText: 'Regiao (id)',
-                helperText: 'Use um id de regiao que exista no APP (seed)',
-              ),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Informe o id da regiao' : null,
-            ),
+            _campoRegiao(),
             const SizedBox(height: 16),
             SegmentedButton<String>(
               segments: const [
@@ -107,6 +129,36 @@ class _CriarAventuraSheetState extends State<CriarAventuraSheet> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _campoRegiao() {
+    if (_carregandoRegioes) {
+      return const InputDecorator(
+        decoration: InputDecoration(labelText: 'Regiao'),
+        child: SizedBox(
+          height: 20,
+          width: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+
+    if (_regioes.isEmpty) {
+      return const InputDecorator(
+        decoration: InputDecoration(labelText: 'Regiao'),
+        child: Text('Nenhuma regiao disponivel'),
+      );
+    }
+
+    return DropdownButtonFormField<Regiao>(
+      initialValue: _regiaoSelecionada,
+      decoration: const InputDecoration(labelText: 'Regiao'),
+      items: _regioes
+          .map((r) => DropdownMenuItem(value: r, child: Text(r.nome)))
+          .toList(),
+      onChanged: (r) => setState(() => _regiaoSelecionada = r),
+      validator: (r) => r == null ? 'Escolha uma regiao' : null,
     );
   }
 }

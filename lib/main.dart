@@ -11,6 +11,8 @@ import 'features/auth/data/auth_repository.dart';
 import 'features/auth/presentation/auth_provider.dart';
 import 'features/aventura/data/aventura_api.dart';
 import 'features/aventura/presentation/aventura_provider.dart';
+import 'features/caminho/data/caminho_api.dart';
+import 'features/caminho/presentation/caminho_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,6 +34,9 @@ Future<void> main() async {
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
         ChangeNotifierProvider<AventuraProvider>(
           create: (_) => AventuraProvider(AventuraApi(dioClient.dio)),
+        ),
+        ChangeNotifierProvider<CaminhoProvider>(
+          create: (_) => CaminhoProvider(CaminhoApi(dioClient.dio)),
         ),
       ],
       child: TrilhaApp(router: router),
