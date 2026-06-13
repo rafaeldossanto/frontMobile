@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/auth_provider.dart';
+import '../../features/amizade/presentation/amizades_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/aventura/presentation/aventura_detalhe_screen.dart';
 import '../../features/aventura/presentation/aventuras_screen.dart';
@@ -31,6 +32,7 @@ GoRouter buildRouter(AuthProvider auth) {
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/aventuras', builder: (context, state) => const AventurasScreen()),
       GoRoute(path: '/mapa', builder: (context, state) => const MapaScreen()),
+      GoRoute(path: '/amizades', builder: (context, state) => const AmizadesScreen()),
       GoRoute(
         path: '/aventuras/:id',
         builder: (context, state) => AventuraDetalheScreen(aventuraId: state.pathParameters['id']!),

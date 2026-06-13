@@ -43,6 +43,12 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               OutlinedButton.icon(
+                onPressed: () => context.go('/amizades'),
+                icon: const Icon(Icons.people),
+                label: const Text('Amizades'),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
                 onPressed: () => context.go('/mapa'),
                 icon: const Icon(Icons.map),
                 label: const Text('Mapa'),

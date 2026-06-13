@@ -11,6 +11,9 @@ import 'features/auth/data/auth_repository.dart';
 import 'features/auth/presentation/auth_provider.dart';
 import 'features/aventura/data/aventura_api.dart';
 import 'features/aventura/presentation/aventura_provider.dart';
+import 'features/amizade/data/amizade_api.dart';
+import 'features/amizade/data/usuario_busca_api.dart';
+import 'features/amizade/presentation/amizade_provider.dart';
 import 'features/caminho/data/caminho_api.dart';
 import 'features/caminho/presentation/caminho_provider.dart';
 
@@ -37,6 +40,12 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider<CaminhoProvider>(
           create: (_) => CaminhoProvider(CaminhoApi(dioClient.dio)),
+        ),
+        ChangeNotifierProvider<AmizadeProvider>(
+          create: (_) => AmizadeProvider(
+            AmizadeApi(dioClient.dio),
+            UsuarioBuscaApi(dioClient.dio),
+          ),
         ),
       ],
       child: TrilhaApp(router: router),
