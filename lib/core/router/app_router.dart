@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/auth_provider.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/aventura/presentation/aventuras_screen.dart';
-import '../../features/home/home_screen.dart';
+import '../../features/home/presentation/home_screen.dart';
 import '../../features/mapa/presentation/mapa_screen.dart';
 
 /// Monta o GoRouter com guard de autenticacao. `refreshListenable` reavalia o
