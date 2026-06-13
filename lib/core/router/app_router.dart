@@ -4,6 +4,7 @@ import '../../features/auth/presentation/auth_provider.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/aventura/presentation/aventuras_screen.dart';
 import '../../features/home/home_screen.dart';
+import '../../features/mapa/presentation/mapa_screen.dart';
 
 /// Monta o GoRouter com guard de autenticacao. `refreshListenable` reavalia o
 /// redirect quando a sessao muda; sem token vai pra /login, logado em /login
@@ -27,6 +28,11 @@ GoRouter buildRouter(AuthProvider auth) {
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/aventuras', builder: (context, state) => const AventurasScreen()),
+      GoRoute(path: '/mapa', builder: (context, state) => const MapaScreen()),
+      GoRoute(
+        path: '/aventuras/:id/mapa',
+        builder: (context, state) => MapaScreen(aventuraId: state.pathParameters['id']),
+      ),
     ],
   );
 }

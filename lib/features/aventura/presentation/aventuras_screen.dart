@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth/presentation/auth_provider.dart';
@@ -86,6 +87,8 @@ class _AventurasScreenState extends State<AventurasScreen> {
               [aventura.status, if (aventura.visibilidade != null) aventura.visibilidade!]
                   .join(' • '),
             ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.go('/aventuras/${aventura.id}/mapa'),
           ),
         );
       },

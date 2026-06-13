@@ -41,6 +41,12 @@ class HomeScreen extends StatelessWidget {
                 icon: const Icon(Icons.hiking),
                 label: const Text('Minhas aventuras'),
               ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () => context.go('/mapa'),
+                icon: const Icon(Icons.map),
+                label: const Text('Mapa'),
+              ),
             ],
           ),
         ),
