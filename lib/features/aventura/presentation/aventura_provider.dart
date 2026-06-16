@@ -32,11 +32,11 @@ class AventuraProvider extends ChangeNotifier {
     }
   }
 
-  /// Cria e recarrega a lista. Retorna true no sucesso; em erro guarda a
-  /// mensagem (a regiao precisa existir no APP, senao o backend recusa).
+  /// Cria e recarrega a lista. A regiao (pasta) e opcional. Retorna true no
+  /// sucesso; em erro guarda a mensagem.
   Future<bool> criar({
     required String usuarioId,
-    required String regiaoId,
+    String? regiaoId,
     required String destino,
     String? visibilidade,
   }) async {
@@ -45,7 +45,7 @@ class AventuraProvider extends ChangeNotifier {
       await carregar(usuarioId);
       return true;
     } catch (_) {
-      _error = 'Nao foi possivel criar a aventura. Confira o id da regiao.';
+      _error = 'Nao foi possivel criar a aventura.';
       notifyListeners();
       return false;
     }

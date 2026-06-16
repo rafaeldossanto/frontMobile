@@ -26,14 +26,14 @@ class AventuraApi {
   }
 
   Future<Aventura> criar({
-    required String regiaoId,
+    String? regiaoId,
     required String destino,
     String? visibilidade,
   }) async {
     final resp = await _dio.post(
       '/bff/aventuras',
       data: {
-        'regiaoId': regiaoId,
+        'regiaoId': ?regiaoId,
         'destino': destino,
         'visibilidade': ?visibilidade,
       },

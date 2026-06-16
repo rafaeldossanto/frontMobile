@@ -59,14 +59,14 @@ class _CriarAventuraSheetState extends State<CriarAventuraSheet> {
   }
 
   Future<void> _salvar() async {
-    if (!_formKey.currentState!.validate() || _regiaoSelecionada == null) {
+    if (!_formKey.currentState!.validate()) {
       return;
     }
     setState(() => _salvando = true);
     final provider = context.read<AventuraProvider>();
     final ok = await provider.criar(
       usuarioId: widget.usuarioId,
-      regiaoId: _regiaoSelecionada!.id,
+      regiaoId: _regiaoSelecionada?.id,
       destino: _destinoController.text.trim(),
       visibilidade: _visibilidade,
     );
@@ -146,19 +146,18 @@ class _CriarAventuraSheetState extends State<CriarAventuraSheet> {
 
     if (_regioes.isEmpty) {
       return const InputDecorator(
-        decoration: InputDecoration(labelText: 'Regiao'),
-        child: Text('Nenhuma regiao disponivel'),
+        decoration: InputDecoration(labelText: 'Pasta (opcional)'),
+        child: Text('Nenhuma pasta — a aventura ficara solta'),
       );
     }
 
     return DropdownButtonFormField<Regiao>(
       initialValue: _regiaoSelecionada,
-      decoration: const InputDecoration(labelText: 'Regiao'),
+      decoration: const InputDecoration(labelText: 'Pasta (opcional)'),
       items: _regioes
           .map((r) => DropdownMenuItem(value: r, child: Text(r.nome)))
           .toList(),
       onChanged: (r) => setState(() => _regiaoSelecionada = r),
-      validator: (r) => r == null ? 'Escolha uma regiao' : null,
     );
   }
 }
