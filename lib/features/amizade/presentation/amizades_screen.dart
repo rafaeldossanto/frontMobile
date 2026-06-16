@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../auth/presentation/auth_provider.dart';
@@ -126,25 +127,13 @@ class _AmizadesScreenState extends State<AmizadesScreen> {
                 leading: const Icon(Icons.person_outline),
                 title: Text(u.nome),
                 subtitle: Text(u.codigoUsuario),
-                trailing: TextButton(
-                  onPressed: () => _solicitar(u.codigoUsuario),
-                  child: const Text('Adicionar'),
-                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.push('/perfil', extra: u),
               );
             }).toList(),
           ),
         ),
       ],
-    );
-  }
-
-  Future<void> _solicitar(String codigo) async {
-    final erro = await context.read<AmizadeProvider>().solicitar(codigo);
-    if (!mounted) {
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(erro ?? 'Solicitacao enviada')),
     );
   }
 

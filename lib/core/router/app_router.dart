@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/auth_provider.dart';
+import '../../features/amizade/domain/usuario_publico.dart';
 import '../../features/amizade/presentation/amizades_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/aventura/presentation/aventura_detalhe_screen.dart';
@@ -8,6 +9,8 @@ import '../../features/aventura/presentation/aventuras_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/mapa/presentation/mapa_screen.dart';
 import '../../features/rastreio/presentation/rastreio_screen.dart';
+import '../../features/seguidor/presentation/lista_usuarios_screen.dart';
+import '../../features/seguidor/presentation/perfil_screen.dart';
 
 /// Monta o GoRouter com guard de autenticacao. `refreshListenable` reavalia o
 /// redirect quando a sessao muda; sem token vai pra /login, logado em /login
@@ -33,6 +36,24 @@ GoRouter buildRouter(AuthProvider auth) {
       GoRoute(path: '/aventuras', builder: (context, state) => const AventurasScreen()),
       GoRoute(path: '/mapa', builder: (context, state) => const MapaScreen()),
       GoRoute(path: '/amizades', builder: (context, state) => const AmizadesScreen()),
+      GoRoute(
+        path: '/perfil',
+        builder: (context, state) {
+          final usuario = state.extra as UsuarioPublico;
+          return PerfilScreen(codigoUsuario: usuario.codigoUsuario, nome: usuario.nome);
+        },
+      ),
+      GoRoute(
+        path: '/usuarios',
+        builder: (context, state) {
+          final args = state.extra as Map<String, dynamic>;
+          return ListaUsuariosScreen(
+            codigo: args['codigo'] as String,
+            tipo: args['tipo'] as String,
+            titulo: args['titulo'] as String,
+          );
+        },
+      ),
       GoRoute(
         path: '/aventuras/:id',
         builder: (context, state) => AventuraDetalheScreen(aventuraId: state.pathParameters['id']!),
