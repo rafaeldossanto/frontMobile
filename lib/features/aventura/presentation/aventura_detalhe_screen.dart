@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/network/dio_client.dart';
 import '../../caminho/presentation/caminho_provider.dart';
+import '../../regiao/presentation/regiao_provider.dart';
+import '../data/aventura_api.dart';
 
 /// Tela de detalhe da aventura: lista os caminhos (pernas), permite iniciar um
 /// novo, finalizar e abrir o rastreio GPS ou o mapa com os pontos.
@@ -40,6 +43,49 @@ class _AventuraDetalheScreenState extends State<AventuraDetalheScreen> {
     await context.read<CaminhoProvider>().finalizar(widget.aventuraId, caminhoId);
   }
 
+  Future<void> _moverParaPasta() async {
+    final regiaoProvider = context.read<RegiaoProvider>();
+    if (regiaoProvider.regioes.isEmpty) {
+      await regiaoProvider.carregar();
+    }
+    if (!mounted) {
+      return;
+    }
+    // Resultado: '' = Nenhuma (tirar da pasta); id = pasta; null = cancelado.
+    final escolha = await showModalBottomSheet<String>(
+      context: context,
+      builder: (_) => ListView(
+        shrinkWrap: true,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.folder_off),
+            title: const Text('Nenhuma (tirar da pasta)'),
+            onTap: () => Navigator.pop(context, ''),
+          ),
+          ...regiaoProvider.regioes.map((r) => ListTile(
+                leading: const Icon(Icons.folder),
+                title: Text(r.nome),
+                onTap: () => Navigator.pop(context, r.id),
+              )),
+        ],
+      ),
+    );
+    if (escolha == null || !mounted) {
+      return;
+    }
+    try {
+      await AventuraApi(context.read<DioClient>().dio)
+          .moverRegiao(widget.aventuraId, escolha.isEmpty ? null : escolha);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Aventura movida')));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nao foi possivel mover')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CaminhoProvider>();
@@ -47,6 +93,11 @@ class _AventuraDetalheScreenState extends State<AventuraDetalheScreen> {
       appBar: AppBar(
         title: const Text('Aventura'),
         actions: [
+          IconButton(
+            tooltip: 'Mover para pasta',
+            icon: const Icon(Icons.drive_file_move),
+            onPressed: _moverParaPasta,
+          ),
           IconButton(
             tooltip: 'Mapa da aventura',
             icon: const Icon(Icons.map),

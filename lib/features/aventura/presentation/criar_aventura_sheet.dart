@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/network/dio_client.dart';
-import '../data/regiao_api.dart';
-import '../domain/regiao.dart';
+import '../../regiao/data/regiao_api.dart';
+import '../../regiao/domain/regiao.dart';
 import 'aventura_provider.dart';
 
 /// Bottom sheet de criacao de aventura. A regiao vem de um seletor carregado de

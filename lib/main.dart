@@ -16,6 +16,8 @@ import 'features/amizade/data/usuario_busca_api.dart';
 import 'features/amizade/presentation/amizade_provider.dart';
 import 'features/caminho/data/caminho_api.dart';
 import 'features/caminho/presentation/caminho_provider.dart';
+import 'features/regiao/data/regiao_api.dart';
+import 'features/regiao/presentation/regiao_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,6 +48,9 @@ Future<void> main() async {
             AmizadeApi(dioClient.dio),
             UsuarioBuscaApi(dioClient.dio),
           ),
+        ),
+        ChangeNotifierProvider<RegiaoProvider>(
+          create: (_) => RegiaoProvider(RegiaoApi(dioClient.dio)),
         ),
       ],
       child: TrilhaApp(router: router),

@@ -9,6 +9,10 @@ import '../../features/aventura/presentation/aventuras_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/mapa/presentation/mapa_screen.dart';
 import '../../features/rastreio/presentation/rastreio_screen.dart';
+import '../../features/regiao/domain/regiao.dart';
+import '../../features/regiao/presentation/explorar_regioes_screen.dart';
+import '../../features/regiao/presentation/minhas_regioes_screen.dart';
+import '../../features/regiao/presentation/regiao_detalhe_screen.dart';
 import '../../features/seguidor/presentation/lista_usuarios_screen.dart';
 import '../../features/seguidor/presentation/perfil_screen.dart';
 
@@ -36,6 +40,12 @@ GoRouter buildRouter(AuthProvider auth) {
       GoRoute(path: '/aventuras', builder: (context, state) => const AventurasScreen()),
       GoRoute(path: '/mapa', builder: (context, state) => const MapaScreen()),
       GoRoute(path: '/amizades', builder: (context, state) => const AmizadesScreen()),
+      GoRoute(path: '/regioes', builder: (context, state) => const MinhasRegioesScreen()),
+      GoRoute(path: '/explorar', builder: (context, state) => const ExplorarRegioesScreen()),
+      GoRoute(
+        path: '/regioes/detalhe',
+        builder: (context, state) => RegiaoDetalheScreen(regiao: state.extra as Regiao),
+      ),
       GoRoute(
         path: '/perfil',
         builder: (context, state) {

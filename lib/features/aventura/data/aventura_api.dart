@@ -40,4 +40,10 @@ class AventuraApi {
     );
     return Aventura.fromJson(resp.data as Map<String, dynamic>);
   }
+
+  /// Move a aventura para uma pasta (regiao) ou tira dela (regiaoId == null).
+  Future<Aventura> moverRegiao(String aventuraId, String? regiaoId) async {
+    final resp = await _dio.patch('/bff/aventuras/$aventuraId/regiao', data: {'regiaoId': regiaoId});
+    return Aventura.fromJson(resp.data as Map<String, dynamic>);
+  }
 }
