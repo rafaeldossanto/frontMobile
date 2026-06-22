@@ -1,36 +1,36 @@
 import 'package:dio/dio.dart';
 
-import '../domain/usuario.dart';
+import '../domain/user.dart';
 
-/// Resultado do login: usuario + token da app e sua validade.
+/// Login result: user + app token and its validity.
 class AuthResult {
   const AuthResult({
-    required this.usuario,
+    required this.user,
     required this.accessToken,
-    required this.expiresInSegundos,
+    required this.expiresInSeconds,
   });
 
-  final Usuario usuario;
+  final User user;
   final String accessToken;
-  final int expiresInSegundos;
+  final int expiresInSeconds;
 }
 
-/// Acesso aos endpoints de autenticacao do BFF.
+/// Access to authentication endpoints of the BFF.
 class AuthApi {
   AuthApi(this._dio);
 
   final Dio _dio;
 
-  Future<AuthResult> devLogin({required String email, required String nome}) async {
+  Future<AuthResult> devLogin({required String email, required String name}) async {
     final resp = await _dio.post(
       '/bff/auth/dev-login',
-      data: {'email': email, 'nome': nome},
+      data: {'email': email, 'nome': name},
     );
     final data = resp.data as Map<String, dynamic>;
     return AuthResult(
-      usuario: Usuario.fromJson(data['usuario'] as Map<String, dynamic>),
+      user: User.fromJson(data['usuario'] as Map<String, dynamic>),
       accessToken: data['accessToken'] as String,
-      expiresInSegundos: (data['expiresInSegundos'] as num).toInt(),
+      expiresInSeconds: (data['expiresInSegundos'] as num).toInt(),
     );
   }
 }

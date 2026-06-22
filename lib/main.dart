@@ -9,15 +9,15 @@ import 'core/storage/token_storage.dart';
 import 'features/auth/data/auth_api.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'features/auth/presentation/auth_provider.dart';
-import 'features/aventura/data/aventura_api.dart';
-import 'features/aventura/presentation/aventura_provider.dart';
-import 'features/amizade/data/amizade_api.dart';
-import 'features/amizade/data/usuario_busca_api.dart';
-import 'features/amizade/presentation/amizade_provider.dart';
-import 'features/caminho/data/caminho_api.dart';
-import 'features/caminho/presentation/caminho_provider.dart';
-import 'features/regiao/data/regiao_api.dart';
-import 'features/regiao/presentation/regiao_provider.dart';
+import 'features/adventure/data/adventure_api.dart';
+import 'features/adventure/presentation/adventure_provider.dart';
+import 'features/friendship/data/friendship_api.dart';
+import 'features/friendship/data/user_search_api.dart';
+import 'features/friendship/presentation/friendship_provider.dart';
+import 'features/path/data/path_api.dart';
+import 'features/path/presentation/trail_path_provider.dart';
+import 'features/region/data/region_api.dart';
+import 'features/region/presentation/region_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,7 +29,7 @@ Future<void> main() async {
   final authProvider = AuthProvider(authRepository);
   await authProvider.bootstrap();
 
-  // Router criado uma vez, fora do build, escutando o AuthProvider.
+  // Router created once, outside build, listening to AuthProvider.
   final router = buildRouter(authProvider);
 
   runApp(
@@ -37,20 +37,20 @@ Future<void> main() async {
       providers: [
         Provider<DioClient>.value(value: dioClient),
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
-        ChangeNotifierProvider<AventuraProvider>(
-          create: (_) => AventuraProvider(AventuraApi(dioClient.dio)),
+        ChangeNotifierProvider<AdventureProvider>(
+          create: (_) => AdventureProvider(AdventureApi(dioClient.dio)),
         ),
-        ChangeNotifierProvider<CaminhoProvider>(
-          create: (_) => CaminhoProvider(CaminhoApi(dioClient.dio)),
+        ChangeNotifierProvider<TrailPathProvider>(
+          create: (_) => TrailPathProvider(PathApi(dioClient.dio)),
         ),
-        ChangeNotifierProvider<AmizadeProvider>(
-          create: (_) => AmizadeProvider(
-            AmizadeApi(dioClient.dio),
-            UsuarioBuscaApi(dioClient.dio),
+        ChangeNotifierProvider<FriendshipProvider>(
+          create: (_) => FriendshipProvider(
+            FriendshipApi(dioClient.dio),
+            UserSearchApi(dioClient.dio),
           ),
         ),
-        ChangeNotifierProvider<RegiaoProvider>(
-          create: (_) => RegiaoProvider(RegiaoApi(dioClient.dio)),
+        ChangeNotifierProvider<RegionProvider>(
+          create: (_) => RegionProvider(RegionApi(dioClient.dio)),
         ),
       ],
       child: TrilhaApp(router: router),

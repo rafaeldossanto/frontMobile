@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 
 import 'auth_provider.dart';
 
-/// Tela de login (dev): nome + e-mail e o botao Entrar. Sem token, o guard do
-/// router manda pra ca; ao logar, ele leva pra /home.
+/// Login screen (dev): name + e-mail and the Enter button. Without a token, the router
+/// guard sends here; on login, it goes to /home.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -14,23 +14,23 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nomeController = TextEditingController();
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
 
   @override
   void dispose() {
-    _nomeController.dispose();
+    _nameController.dispose();
     _emailController.dispose();
     super.dispose();
   }
 
-  Future<void> _entrar() async {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
     await context.read<AuthProvider>().login(
           email: _emailController.text.trim(),
-          nome: _nomeController.text.trim(),
+          name: _nameController.text.trim(),
         );
   }
 
@@ -59,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 32),
                   TextFormField(
-                    controller: _nomeController,
+                    controller: _nameController,
                     textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(labelText: 'Nome'),
                     validator: (v) =>
@@ -71,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.done,
                     decoration: const InputDecoration(labelText: 'E-mail'),
-                    onFieldSubmitted: (_) => _entrar(),
+                    onFieldSubmitted: (_) => _submit(),
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) return 'Informe seu e-mail';
                       if (!v.contains('@')) return 'E-mail invalido';
@@ -88,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 12),
                   ],
                   FilledButton(
-                    onPressed: auth.loading ? null : _entrar,
+                    onPressed: auth.loading ? null : _submit,
                     child: auth.loading
                         ? const SizedBox(
                             height: 20,

@@ -1,19 +1,19 @@
 import '../../../core/storage/token_storage.dart';
-import '../domain/usuario.dart';
+import '../domain/user.dart';
 import 'auth_api.dart';
 
-/// Orquestra API + storage: ao logar, persiste token e usuarioId; expoe o
-/// estado de sessao (hasToken/usuarioId) e o logout.
+/// Orchestrates API + storage: on login, persists token and userId; exposes the
+/// session state (hasToken/userId) and logout.
 class AuthRepository {
   AuthRepository(this._api, this._storage);
 
   final AuthApi _api;
   final TokenStorage _storage;
 
-  Future<Usuario> devLogin({required String email, required String nome}) async {
-    final result = await _api.devLogin(email: email, nome: nome);
-    await _storage.saveSession(token: result.accessToken, usuarioId: result.usuario.id);
-    return result.usuario;
+  Future<User> devLogin({required String email, required String name}) async {
+    final result = await _api.devLogin(email: email, name: name);
+    await _storage.saveSession(token: result.accessToken, userId: result.user.id);
+    return result.user;
   }
 
   Future<bool> hasToken() async {
@@ -21,7 +21,7 @@ class AuthRepository {
     return token != null && token.isNotEmpty;
   }
 
-  Future<String?> usuarioId() => _storage.readUsuarioId();
+  Future<String?> userId() => _storage.readUserId();
 
   Future<void> logout() => _storage.clear();
 }

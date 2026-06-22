@@ -1,8 +1,8 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-/// Guarda a sessao do usuario de forma segura (Keystore no Android). O token e o
-/// usuarioId ficam aqui: o token vai no header das chamadas; o usuarioId e
-/// necessario para montar as telas que dependem do dono (ex.: aventuras).
+/// Stores the user session securely (Keystore on Android). The token and the
+/// userId are kept here: the token goes in the request header; the userId is
+/// needed to build screens that depend on the owner (e.g.: adventures).
 class TokenStorage {
   TokenStorage([FlutterSecureStorage? storage])
       : _storage = storage ?? const FlutterSecureStorage();
@@ -10,19 +10,19 @@ class TokenStorage {
   final FlutterSecureStorage _storage;
 
   static const _kToken = 'access_token';
-  static const _kUsuarioId = 'usuario_id';
+  static const _kUserId = 'usuario_id';
 
-  Future<void> saveSession({required String token, required String usuarioId}) async {
+  Future<void> saveSession({required String token, required String userId}) async {
     await _storage.write(key: _kToken, value: token);
-    await _storage.write(key: _kUsuarioId, value: usuarioId);
+    await _storage.write(key: _kUserId, value: userId);
   }
 
   Future<String?> readToken() => _storage.read(key: _kToken);
 
-  Future<String?> readUsuarioId() => _storage.read(key: _kUsuarioId);
+  Future<String?> readUserId() => _storage.read(key: _kUserId);
 
   Future<void> clear() async {
     await _storage.delete(key: _kToken);
-    await _storage.delete(key: _kUsuarioId);
+    await _storage.delete(key: _kUserId);
   }
 }

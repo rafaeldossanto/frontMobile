@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../../auth/presentation/auth_provider.dart';
 
-/// Home pos-login: saudacao, atalho para as aventuras e logout. A navegacao
-/// para /aventuras chega no #16.
+/// Post-login home: greeting, shortcut to adventures and logout. Navigation
+/// to /aventuras reaches screen #16.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -13,7 +13,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final theme = Theme.of(context);
-    final nome = auth.usuario?.nome ?? 'trilheiro';
+    final name = auth.user?.name ?? 'trilheiro';
 
     return Scaffold(
       appBar: AppBar(
@@ -34,7 +34,7 @@ class HomeScreen extends StatelessWidget {
             children: [
               Icon(Icons.terrain, size: 72, color: theme.colorScheme.primary),
               const SizedBox(height: 16),
-              Text('Ola, $nome', style: theme.textTheme.titleLarge),
+              Text('Ola, $name', style: theme.textTheme.titleLarge),
               const SizedBox(height: 32),
               FilledButton.icon(
                 onPressed: () => context.go('/aventuras'),
