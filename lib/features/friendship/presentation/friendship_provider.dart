@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../core/network/error_handler.dart';
 import '../data/friendship_api.dart';
 import '../data/user_search_api.dart';
 import '../domain/friendship.dart';
@@ -31,8 +32,8 @@ class FriendshipProvider extends ChangeNotifier {
     try {
       _friends = (await _api.listFriends()).content;
       _pending = (await _api.pending()).content;
-    } catch (_) {
-      _error = 'Nao foi possivel carregar as amizades.';
+    } catch (e, st) {
+      _error = ErrorHandler.message(e, st);
     } finally {
       _loading = false;
       notifyListeners();
@@ -47,7 +48,8 @@ class FriendshipProvider extends ChangeNotifier {
     }
     try {
       _searchResults = await _searchApi.searchUsers(term.trim());
-    } catch (_) {
+    } catch (e, st) {
+      _error = ErrorHandler.message(e, st);
       _searchResults = const [];
     }
     notifyListeners();
@@ -58,8 +60,8 @@ class FriendshipProvider extends ChangeNotifier {
     try {
       await _api.sendRequest(userCode);
       return null;
-    } catch (_) {
-      return 'Nao foi possivel enviar a solicitacao.';
+    } catch (e, st) {
+      return ErrorHandler.message(e, st);
     }
   }
 
@@ -67,8 +69,8 @@ class FriendshipProvider extends ChangeNotifier {
     try {
       await _api.respond(friendshipId, status);
       await load();
-    } catch (_) {
-      _error = 'Nao foi possivel responder a solicitacao.';
+    } catch (e, st) {
+      _error = ErrorHandler.message(e, st);
       notifyListeners();
     }
   }

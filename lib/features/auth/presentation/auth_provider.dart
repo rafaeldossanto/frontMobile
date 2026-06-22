@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../core/network/error_handler.dart';
 import '../data/auth_repository.dart';
 import '../domain/user.dart';
 
@@ -40,8 +41,8 @@ class AuthProvider extends ChangeNotifier {
       _user = user;
       _userId = user.id;
       _isLoggedIn = true;
-    } catch (_) {
-      _error = 'Falha ao entrar. Confira se o backend (profile dev) esta no ar.';
+    } catch (e, st) {
+      _error = ErrorHandler.message(e, st);
       _isLoggedIn = false;
     } finally {
       _loading = false;

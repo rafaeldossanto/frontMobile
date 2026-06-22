@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../core/network/error_handler.dart';
 import '../data/path_api.dart';
 import '../domain/path_model.dart';
 
@@ -25,8 +26,8 @@ class TrailPathProvider extends ChangeNotifier {
     try {
       final page = await _api.listByAdventure(adventureId);
       _paths = page.content;
-    } catch (_) {
-      _error = 'Nao foi possivel carregar os caminhos.';
+    } catch (e, st) {
+      _error = ErrorHandler.message(e, st);
     } finally {
       _loading = false;
       notifyListeners();
@@ -38,8 +39,8 @@ class TrailPathProvider extends ChangeNotifier {
       final path = await _api.start(adventureId: adventureId, color: color);
       await load(adventureId);
       return path;
-    } catch (_) {
-      _error = 'Nao foi possivel iniciar o caminho.';
+    } catch (e, st) {
+      _error = ErrorHandler.message(e, st);
       notifyListeners();
       return null;
     }
@@ -49,8 +50,8 @@ class TrailPathProvider extends ChangeNotifier {
     try {
       await _api.finish(pathId);
       await load(adventureId);
-    } catch (_) {
-      _error = 'Nao foi possivel finalizar o caminho.';
+    } catch (e, st) {
+      _error = ErrorHandler.message(e, st);
       notifyListeners();
     }
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../core/network/error_handler.dart';
 import '../data/region_api.dart';
 import '../domain/city.dart';
 import '../domain/region.dart';
@@ -24,8 +25,8 @@ class RegionProvider extends ChangeNotifier {
     notifyListeners();
     try {
       _regions = await _api.list();
-    } catch (_) {
-      _error = 'Nao foi possivel carregar as pastas.';
+    } catch (e, st) {
+      _error = ErrorHandler.message(e, st);
     } finally {
       _loading = false;
       notifyListeners();
@@ -47,8 +48,8 @@ class RegionProvider extends ChangeNotifier {
       }
       await load();
       return true;
-    } catch (_) {
-      _error = 'Nao foi possivel salvar a pasta.';
+    } catch (e, st) {
+      _error = ErrorHandler.message(e, st);
       notifyListeners();
       return false;
     }
@@ -58,8 +59,8 @@ class RegionProvider extends ChangeNotifier {
     try {
       await _api.delete(id);
       await load();
-    } catch (_) {
-      _error = 'Nao foi possivel excluir a pasta.';
+    } catch (e, st) {
+      _error = ErrorHandler.message(e, st);
       notifyListeners();
     }
   }

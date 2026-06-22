@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../core/network/error_handler.dart';
 import '../data/adventure_api.dart';
 import '../domain/adventure.dart';
 
@@ -24,8 +25,8 @@ class AdventureProvider extends ChangeNotifier {
     try {
       final page = await _api.listByUser(userId);
       _adventures = page.content;
-    } catch (_) {
-      _error = 'Nao foi possivel carregar as aventuras.';
+    } catch (e, st) {
+      _error = ErrorHandler.message(e, st);
     } finally {
       _loading = false;
       notifyListeners();
@@ -44,8 +45,8 @@ class AdventureProvider extends ChangeNotifier {
       await _api.create(regionId: regionId, destination: destination, visibility: visibility);
       await load(userId);
       return true;
-    } catch (_) {
-      _error = 'Nao foi possivel criar a aventura.';
+    } catch (e, st) {
+      _error = ErrorHandler.message(e, st);
       notifyListeners();
       return false;
     }
