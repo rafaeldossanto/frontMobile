@@ -23,5 +23,7 @@ class AuthRepository {
 
   Future<String?> userId() => _storage.readUserId();
 
+  Future<User> getUser(String id) => _api.getUser(id);
+
   Future<void> logout() => _storage.clear();
 }

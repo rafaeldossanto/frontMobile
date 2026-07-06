@@ -8,4 +8,7 @@ class Env {
   static String get apiBaseUrl => dotenv.get('API_BASE_URL');
 
   static String get midiaBaseUrl => dotenv.get('MIDIA_BASE_URL');
+
+  /// Endpoint STOMP/SockJS do loc — o acompanhamento ao vivo nao passa pelo BFF.
+  static String get locWsUrl => dotenv.get('LOC_WS_URL');
 }

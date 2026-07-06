@@ -1,13 +1,32 @@
 import 'package:flutter/material.dart';
 
-/// Tema escuro do Trilha. App de trilha/outdoor — fundo escuro, verde como cor
-/// de marca. Centralizado aqui para todas as telas herdarem o mesmo visual.
+/// Tema escuro do Trilha, inspirado no Instagram dark: fundo preto puro,
+/// superficies quase pretas e divisores sutis. O verde continua como cor de
+/// marca (botoes, destaques); o anel de stories usa o gradiente classico.
 class AppTheme {
   const AppTheme._();
 
   static const Color _verde = Color(0xFF4CAF7D);
-  static const Color _fundo = Color(0xFF121512);
-  static const Color _superficie = Color(0xFF1C201C);
+  static const Color _fundo = Color(0xFF000000);
+  static const Color _superficie = Color(0xFF121212);
+
+  /// Gradiente do anel de stories (estilo Instagram).
+  static const List<Color> storyGradient = [
+    Color(0xFFFEDA75),
+    Color(0xFFFA7E1E),
+    Color(0xFFD62976),
+    Color(0xFF962FBF),
+    Color(0xFF4F5BD5),
+  ];
+
+  /// Wordmark do app (logo tipografica do AppBar e do login).
+  static const TextStyle wordmark = TextStyle(
+    fontFamily: 'serif',
+    fontStyle: FontStyle.italic,
+    fontWeight: FontWeight.w700,
+    fontSize: 26,
+    letterSpacing: 0.5,
+  );
 
   static ThemeData get dark {
     final base = ThemeData.dark(useMaterial3: true);
@@ -21,16 +40,26 @@ class AppTheme {
     return base.copyWith(
       colorScheme: colors,
       scaffoldBackgroundColor: _fundo,
+      dividerColor: Colors.white12,
       appBarTheme: const AppBarTheme(
         backgroundColor: _fundo,
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false,
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size.fromHeight(52),
+          minimumSize: const Size.fromHeight(44),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(44),
+          side: const BorderSide(color: Colors.white24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
           ),
         ),
       ),
@@ -38,7 +67,7 @@ class AppTheme {
         filled: true,
         fillColor: _superficie,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
       ),
@@ -48,6 +77,11 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
+      ),
+      tabBarTheme: const TabBarThemeData(
+        indicatorColor: Colors.white,
+        labelColor: Colors.white,
+        unselectedLabelColor: Colors.white54,
       ),
     );
   }

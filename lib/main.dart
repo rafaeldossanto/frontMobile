@@ -36,6 +36,8 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         Provider<DioClient>.value(value: dioClient),
+        // O socket do ao vivo precisa do token cru (Bearer no CONNECT do STOMP).
+        Provider<TokenStorage>.value(value: tokenStorage),
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
         ChangeNotifierProvider<AdventureProvider>(
           create: (_) => AdventureProvider(AdventureApi(dioClient.dio)),

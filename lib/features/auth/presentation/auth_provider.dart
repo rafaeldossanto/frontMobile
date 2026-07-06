@@ -32,6 +32,20 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Guarantees `user` is filled after a session restore (bootstrap only reads
+  /// the token/userId from storage; the rest comes from the BFF).
+  Future<void> ensureUser() async {
+    if (_user != null || _userId == null) {
+      return;
+    }
+    try {
+      _user = await _repository.getUser(_userId!);
+      notifyListeners();
+    } catch (_) {
+      // Sem o perfil o app segue funcionando com o userId do storage.
+    }
+  }
+
   Future<void> login({required String email, required String name}) async {
     _loading = true;
     _error = null;

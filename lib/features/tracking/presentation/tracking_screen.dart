@@ -15,6 +15,8 @@ import '../data/tracking_api.dart';
 /// Live GPS tracking of a path: opens a session, follows `geolocator`,
 /// publishes each point and draws the route. On finish, closes the session and the
 /// path (actual distance is calculated by the backend from the points).
+/// Before starting, the user chooses who can watch the trail live (PRIVADO/
+/// AMIGOS/SEGUIDORES/PUBLICO) — changeable mid-session via the AppBar icon.
 class TrackingScreen extends StatefulWidget {
   const TrackingScreen({super.key, required this.pathId});
 
@@ -30,6 +32,14 @@ class _TrackingScreenState extends State<TrackingScreen> {
     distanceFilter: 5,
   );
 
+  /// Opcoes de visibilidade do acompanhamento ao vivo (contrato do BFF).
+  static const _visibilityOptions = [
+    (code: 'PRIVADO', label: 'Ninguem', hint: 'So voce ve a trilha ao vivo', icon: Icons.lock_outline),
+    (code: 'AMIGOS', label: 'Amigos', hint: 'Somente seus amigos acompanham', icon: Icons.people_outline),
+    (code: 'SEGUIDORES', label: 'Seguidores', hint: 'Quem te segue acompanha', icon: Icons.person_add_alt),
+    (code: 'PUBLICO', label: 'Publico', hint: 'Qualquer pessoa acompanha', icon: Icons.public),
+  ];
+
   final _mapController = MapController();
   late final TrackingApi _api = TrackingApi(context.read<DioClient>().dio);
   late final PathApi _pathApi = PathApi(context.read<DioClient>().dio);
@@ -38,12 +48,90 @@ class _TrackingScreenState extends State<TrackingScreen> {
   String? _sessionId;
   final List<LatLng> _route = [];
   String _status = 'Iniciando...';
+  String _visibility = 'PRIVADO';
   bool _finishing = false;
 
   @override
   void initState() {
     super.initState();
-    _start();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _chooseVisibilityAndStart());
+  }
+
+  /// Antes de rastrear, o usuario escolhe quem acompanha ao vivo. Fechar o
+  /// sheet sem escolher mantem o default seguro (PRIVADO).
+  Future<void> _chooseVisibilityAndStart() async {
+    final choice = await _showVisibilitySheet();
+    if (!mounted) {
+      return;
+    }
+    if (choice != null) {
+      setState(() => _visibility = choice);
+    }
+    await _start();
+  }
+
+  Future<String?> _showVisibilitySheet() {
+    return showModalBottomSheet<String>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Quem pode acompanhar sua trilha ao vivo?',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+            for (final option in _visibilityOptions)
+              ListTile(
+                leading: Icon(option.icon),
+                title: Text(option.label),
+                subtitle: Text(option.hint, style: const TextStyle(fontSize: 12)),
+                trailing: _visibility == option.code
+                    ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+                    : null,
+                onTap: () => Navigator.pop(context, option.code),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Durante a sessao: troca a visibilidade no backend (PATCH no BFF).
+  Future<void> _changeVisibility() async {
+    final choice = await _showVisibilitySheet();
+    final sessionId = _sessionId;
+    if (choice == null || !mounted) {
+      return;
+    }
+    if (sessionId == null) {
+      setState(() => _visibility = choice);
+      return;
+    }
+    try {
+      await _api.updateVisibility(sessionId: sessionId, visibility: choice);
+      if (mounted) {
+        setState(() => _visibility = choice);
+        _showMessage('Agora ${_labelOf(choice).toLowerCase()} podem acompanhar');
+      }
+    } catch (_) {
+      _showMessage('Nao foi possivel alterar a visibilidade');
+    }
+  }
+
+  String _labelOf(String code) =>
+      _visibilityOptions.firstWhere((o) => o.code == code).label;
+
+  IconData _iconOf(String code) =>
+      _visibilityOptions.firstWhere((o) => o.code == code).icon;
+
+  void _showMessage(String msg) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    }
   }
 
   @override
@@ -68,7 +156,11 @@ class _TrackingScreenState extends State<TrackingScreen> {
     }
 
     try {
-      final session = await _api.startSession(pathId: widget.pathId, userId: userId);
+      final session = await _api.startSession(
+        pathId: widget.pathId,
+        userId: userId,
+        visibility: _visibility,
+      );
       if (!mounted) {
         return;
       }
@@ -140,6 +232,11 @@ class _TrackingScreenState extends State<TrackingScreen> {
       appBar: AppBar(
         title: Text(_status),
         actions: [
+          IconButton(
+            tooltip: 'Ao vivo: ${_labelOf(_visibility)}',
+            icon: Icon(_iconOf(_visibility)),
+            onPressed: _finishing ? null : _changeVisibility,
+          ),
           if (_finishing)
             const Padding(
               padding: EdgeInsets.all(14),

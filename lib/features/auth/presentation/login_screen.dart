@@ -50,12 +50,23 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(Icons.terrain, size: 72, color: theme.colorScheme.primary),
-                  const SizedBox(height: 12),
-                  Text(
+                  Icon(Icons.terrain, size: 56, color: theme.colorScheme.primary),
+                  const SizedBox(height: 8),
+                  const Text(
                     'Trilha',
                     textAlign: TextAlign.center,
-                    style: theme.textTheme.headlineMedium,
+                    style: TextStyle(
+                      fontFamily: 'serif',
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 44,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Compartilhe suas trilhas',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white54),
                   ),
                   const SizedBox(height: 32),
                   TextFormField(

@@ -21,6 +21,11 @@ class AuthApi {
 
   final Dio _dio;
 
+  Future<User> getUser(String id) async {
+    final resp = await _dio.get('/bff/usuarios/$id');
+    return User.fromJson(resp.data as Map<String, dynamic>);
+  }
+
   Future<AuthResult> devLogin({required String email, required String name}) async {
     final resp = await _dio.post(
       '/bff/auth/dev-login',

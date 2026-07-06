@@ -3,13 +3,15 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/network/dio_client.dart';
+import '../../../shared/widgets/story_avatar.dart';
 import '../../friendship/presentation/friendship_provider.dart';
 import '../data/follower_api.dart';
 import '../domain/counters.dart';
 import '../domain/follow_status.dart';
 
-/// Profile of another user: follow/following, counters and the add friend button
-/// (only enabled when the follow is mutual).
+/// Perfil de outro usuario, estilo Instagram: cabecalho com avatar +
+/// contadores, botoes Seguir/Amigo lado a lado e a area de aventuras
+/// privada (so amigos veem as trilhas no feed).
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, required this.userCode, required this.name});
 
@@ -99,54 +101,91 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(widget.name)),
+      appBar: AppBar(
+        title: Text(widget.userCode, style: const TextStyle(fontWeight: FontWeight.w700)),
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(24),
-              children: [
-                Center(
-                  child: CircleAvatar(
-                    radius: 40,
-                    backgroundColor: theme.colorScheme.primary,
-                    child: Text(
-                      widget.name.isNotEmpty ? widget.name[0].toUpperCase() : '?',
-                      style: const TextStyle(fontSize: 32, color: Colors.black),
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: Row(
+                      children: [
+                        StoryAvatar(name: widget.name, radius: 38),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _counter('Seguidores', _counters?.followers ?? 0,
+                                  () => _openList('seguidores', 'Seguidores')),
+                              _counter('Seguindo', _counters?.following ?? 0,
+                                  () => _openList('seguindo', 'Seguindo')),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Center(child: Text(widget.name, style: theme.textTheme.titleLarge)),
-                Center(child: Text(widget.userCode, style: theme.textTheme.bodySmall)),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _counter('Seguidores', _counters?.followers ?? 0,
-                        () => _openList('seguidores', 'Seguidores')),
-                    _counter('Seguindo', _counters?.following ?? 0,
-                        () => _openList('seguindo', 'Seguindo')),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                _followButton(),
-                const SizedBox(height: 12),
-                _addFriendButton(),
-              ],
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                    child: Text(widget.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Expanded(child: _followButton()),
+                        const SizedBox(width: 8),
+                        Expanded(child: _addFriendButton()),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(height: 1),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 64, left: 32, right: 32),
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white24, width: 2),
+                          ),
+                          child: const Icon(Icons.lock_outline, size: 32),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'As aventuras deste trilheiro sao privadas',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Siga e vire amigo para acompanhar as trilhas dele.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 12, color: Colors.white54),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
     );
   }
 
   Widget _counter(String label, int value, VoidCallback onTap) {
-    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
       child: Column(
         children: [
-          Text('$value', style: theme.textTheme.titleLarge),
-          Text(label, style: theme.textTheme.bodySmall),
+          Text('$value', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          Text(label, style: const TextStyle(fontSize: 12, color: Colors.white70)),
         ],
       ),
     );
@@ -166,8 +205,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final isMutual = _followStatus?.isMutual ?? false;
     return OutlinedButton.icon(
       onPressed: isMutual ? _addFriend : null,
-      icon: const Icon(Icons.person_add),
-      label: Text(isMutual ? 'Adicionar amigo' : 'Adicionar amigo (precisa ser mutuo)'),
+      icon: const Icon(Icons.person_add_alt, size: 18),
+      label: Text(isMutual ? 'Adicionar amigo' : 'Amigo (siga mutuo)'),
     );
   }
 }
