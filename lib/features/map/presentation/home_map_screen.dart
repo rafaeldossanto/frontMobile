@@ -8,9 +8,11 @@ import 'package:provider/provider.dart';
 
 import '../../../core/network/dio_client.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/story_avatar.dart';
 import '../../adventure/data/adventure_api.dart';
 import '../../adventure/domain/adventure.dart';
 import '../../auth/presentation/auth_provider.dart';
+import '../../friendship/domain/public_user.dart';
 import '../../path/data/path_api.dart';
 import '../../path/domain/discovered_trail.dart';
 import '../../tracking/data/tracking_api.dart';
@@ -83,6 +85,9 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   List<DiscoveredTrail> _community = const [];
   List<LiveSession> _live = const [];
   Timer? _discoverDebounce;
+
+  // Hit-test das polylines da comunidade: toque abre o card da trilha.
+  final LayerHitNotifier<DiscoveredTrail> _communityHit = ValueNotifier(null);
 
   @override
   void initState() {
@@ -265,21 +270,37 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                 urlTemplate: _topoLayer ? _topoTiles : _darkTiles,
                 userAgentPackageName: 'com.trilha.trilha_app',
               ),
+              GestureDetector(
+                onTap: () {
+                  final hit = _communityHit.value;
+                  final trail = hit?.hitValues.firstOrNull;
+                  if (trail != null) {
+                    _showCommunityTrail(trail);
+                  }
+                },
+                child: PolylineLayer(
+                  hitNotifier: _communityHit,
+                  polylines: [
+                    for (final trail in _community)
+                      if (trail.points.length >= 2) ...[
+                        Polyline(
+                          points: [for (final p in trail.points) LatLng(p.latitude, p.longitude)],
+                          strokeWidth: 6,
+                          color: _communityColor(trail).withValues(alpha: 0.18),
+                          hitValue: trail,
+                        ),
+                        Polyline(
+                          points: [for (final p in trail.points) LatLng(p.latitude, p.longitude)],
+                          strokeWidth: 2.5,
+                          color: _communityColor(trail).withValues(alpha: 0.85),
+                          hitValue: trail,
+                        ),
+                      ],
+                  ],
+                ),
+              ),
               PolylineLayer(
                 polylines: [
-                  for (final trail in _community)
-                    if (trail.points.length >= 2) ...[
-                      Polyline(
-                        points: [for (final p in trail.points) LatLng(p.latitude, p.longitude)],
-                        strokeWidth: 6,
-                        color: _communityColor(trail).withValues(alpha: 0.18),
-                      ),
-                      Polyline(
-                        points: [for (final p in trail.points) LatLng(p.latitude, p.longitude)],
-                        strokeWidth: 2.5,
-                        color: _communityColor(trail).withValues(alpha: 0.85),
-                      ),
-                    ],
                   for (final trail in _trails)
                     for (final segment in trail.segments) ...[
                       Polyline(
@@ -460,6 +481,76 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
       'VERMELHO': Color(0xFFFF8A80),
     };
     return byName[trail.color] ?? _palette[trail.adventureId.hashCode.abs() % _palette.length];
+  }
+
+  /// Card da trilha tocada: quem fez, destino e atalhos pro perfil/aventura.
+  void _showCommunityTrail(DiscoveredTrail trail) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  StoryAvatar(name: trail.userName, radius: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(trail.userName,
+                            style: const TextStyle(fontWeight: FontWeight.w600)),
+                        Text(
+                          trail.destination,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12, color: Colors.white54),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _communityColor(trail),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.push('/aventuras/${trail.adventureId}');
+                },
+                icon: const Icon(Icons.route_outlined),
+                label: const Text('Ver aventura'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: trail.userCode.isEmpty
+                    ? null
+                    : () {
+                        Navigator.pop(context);
+                        context.push(
+                          '/perfil',
+                          extra: PublicUser(userCode: trail.userCode, name: trail.userName),
+                        );
+                      },
+                icon: const Icon(Icons.person_outline),
+                label: const Text('Ver perfil'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _communityChip(BuildContext context) {

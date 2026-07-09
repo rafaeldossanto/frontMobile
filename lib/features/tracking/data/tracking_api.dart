@@ -64,6 +64,13 @@ class TrackingApi {
     );
   }
 
+  /// Sessao (metadados) do caminho — quem assiste usa para saber se a trilha
+  /// ainda esta em andamento.
+  Future<Session> sessionByPath(String pathId) async {
+    final resp = await _dio.get('/bff/localizacao/sessao/caminho/$pathId');
+    return Session.fromJson(resp.data as Map<String, dynamic>);
+  }
+
   /// Quem esta trilhando agora e o usuario pode acompanhar ao vivo.
   Future<List<LiveSession>> liveSessions() async {
     final resp = await _dio.get('/bff/localizacao/sessoes-ao-vivo');

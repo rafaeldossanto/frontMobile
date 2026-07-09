@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -14,6 +16,8 @@ import '../domain/live_session.dart';
 /// assina o WebSocket do loc e desenha a linha crescendo conforme o trilheiro
 /// anda. A autorizacao (amigos/seguidores/publico) e do backend — se o
 /// SUBSCRIBE for negado, a tela avisa e mostra so o trajeto ja carregado.
+/// O socket reconecta sozinho (status "Reconectando...") e um poll periodico
+/// detecta o fim da trilha para encerrar a tela graciosamente.
 class LiveWatchScreen extends StatefulWidget {
   const LiveWatchScreen({super.key, required this.session});
 
@@ -30,9 +34,11 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
   late final TrackingApi _api = TrackingApi(context.read<DioClient>().dio);
 
   LiveLocationSocket? _socket;
+  Timer? _finishPoll;
   final List<LatLng> _route = [];
   String _status = 'Conectando...';
   bool _mapReady = false;
+  bool _finished = false;
 
   @override
   void initState() {
@@ -42,8 +48,35 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
 
   @override
   void dispose() {
+    _finishPoll?.cancel();
     _socket?.dispose();
     super.dispose();
+  }
+
+  /// O topico simplesmente para de emitir quando a sessao acaba — este poll
+  /// diferencia "trilha finalizada" de "sinal caiu" para o espectador.
+  void _startFinishPoll() {
+    _finishPoll = Timer.periodic(const Duration(seconds: 30), (_) async {
+      try {
+        final session = await _api.sessionByPath(widget.session.pathId);
+        if (mounted && session.status != 'EM_ANDAMENTO') {
+          _onSessionFinished();
+        }
+      } catch (_) {
+        // Sem resposta o poll tenta de novo no proximo tick.
+      }
+    });
+  }
+
+  void _onSessionFinished() {
+    _finishPoll?.cancel();
+    _socket?.dispose();
+    if (mounted) {
+      setState(() {
+        _finished = true;
+        _status = 'Trilha finalizada';
+      });
+    }
   }
 
   Future<void> _start() async {
@@ -70,13 +103,18 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
       ..connect(
         sessionId: widget.session.sessionId,
         onPoint: _onLivePoint,
-        onError: () {
-          if (mounted) {
-            setState(() => _status = 'Sem acesso ao vivo');
+        onConnected: () {
+          if (mounted && !_finished) {
+            setState(() => _status = 'Ao vivo');
+          }
+        },
+        onDisconnected: () {
+          if (mounted && !_finished) {
+            setState(() => _status = 'Reconectando...');
           }
         },
       );
-    setState(() => _status = 'Ao vivo');
+    _startFinishPoll();
   }
 
   void _onLivePoint(GpsPoint point) {
@@ -105,7 +143,10 @@ class _LiveWatchScreenState extends State<LiveWatchScreen> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const _PulsingDot(color: _liveColor),
+            if (_finished)
+              const Icon(Icons.flag, size: 16, color: _liveColor)
+            else
+              const _PulsingDot(color: _liveColor),
             const SizedBox(width: 8),
             Flexible(
               child: Text(

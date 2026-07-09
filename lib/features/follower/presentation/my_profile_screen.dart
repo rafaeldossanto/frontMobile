@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/network/dio_client.dart';
+import '../../../shared/widgets/adventure_grid.dart';
 import '../../../shared/widgets/story_avatar.dart';
 import '../../adventure/domain/adventure.dart';
 import '../../adventure/presentation/adventure_provider.dart';
@@ -199,57 +200,6 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
         ),
       );
     }
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 2,
-        crossAxisSpacing: 2,
-      ),
-      itemCount: provider.adventures.length,
-      itemBuilder: (context, index) {
-        final adventure = provider.adventures[index];
-        return InkWell(
-          onTap: () => context.push('/aventuras/${adventure.id}'),
-          child: FutureBuilder<List<MediaItem>>(
-            future: _mediaOf(adventure),
-            builder: (context, snapshot) {
-              final photos = snapshot.data ?? const <MediaItem>[];
-              if (photos.isEmpty) {
-                return _tilePlaceholder(adventure);
-              }
-              return Image.network(
-                photos.first.url,
-                fit: BoxFit.cover,
-                errorBuilder: (context, _, _) => _tilePlaceholder(adventure),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _tilePlaceholder(Adventure adventure) {
-    final theme = Theme.of(context);
-    return Container(
-      color: theme.colorScheme.surface,
-      padding: const EdgeInsets.all(6),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.terrain, color: theme.colorScheme.primary, size: 28),
-          const SizedBox(height: 4),
-          Text(
-            adventure.destination,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 10, color: Colors.white70),
-          ),
-        ],
-      ),
-    );
+    return AdventureGrid(adventures: provider.adventures, mediaOf: _mediaOf);
   }
 }

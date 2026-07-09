@@ -30,16 +30,56 @@ class _FeedScreenState extends State<FeedScreen> {
 
   // Cache das midias por aventura para o rebuild do feed nao refazer o GET.
   final Map<String, Future<List<MediaItem>>> _mediaByAdventure = {};
+  final _scrollController = ScrollController();
 
   List<FeedAdventure> _posts = const [];
   List<PublicUser> _following = const [];
   bool _loading = true;
+  bool _loadingMore = false;
+  bool _hasMore = true;
+  int _page = 0;
   String? _error;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// Paginacao infinita: chegando perto do fim, busca a proxima pagina.
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 400) {
+      _loadMore();
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMore || _loading) {
+      return;
+    }
+    _loadingMore = true;
+    try {
+      final next = await _feedApi.feed(page: _page + 1);
+      if (mounted) {
+        setState(() {
+          _page += 1;
+          _posts = [..._posts, ...next.content];
+          _hasMore = _page + 1 < next.totalPages;
+        });
+      }
+    } catch (_) {
+      // Proximo scroll tenta de novo.
+    } finally {
+      _loadingMore = false;
+    }
   }
 
   Future<void> _load() async {
@@ -55,6 +95,8 @@ class _FeedScreenState extends State<FeedScreen> {
       if (mounted) {
         setState(() {
           _posts = page.content;
+          _page = 0;
+          _hasMore = page.totalPages > 1;
           _error = null;
           _loading = false;
         });
@@ -121,6 +163,7 @@ class _FeedScreenState extends State<FeedScreen> {
     }
 
     return ListView(
+      controller: _scrollController,
       children: [
         _storiesRow(auth),
         const Divider(height: 1),
@@ -140,7 +183,7 @@ class _FeedScreenState extends State<FeedScreen> {
               ],
             ),
           )
-        else
+        else ...[
           ..._posts.map(
             (post) => _PostCard(
               post: post,
@@ -148,6 +191,18 @@ class _FeedScreenState extends State<FeedScreen> {
               media: _mediaOf(post),
             ),
           ),
+          if (_hasMore)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: SizedBox(
+                  height: 22,
+                  width: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+        ],
       ],
     );
   }

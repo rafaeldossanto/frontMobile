@@ -3,15 +3,22 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/network/dio_client.dart';
+import '../../../shared/widgets/adventure_grid.dart';
 import '../../../shared/widgets/story_avatar.dart';
+import '../../adventure/data/adventure_api.dart';
+import '../../adventure/domain/adventure.dart';
+import '../../friendship/data/user_search_api.dart';
 import '../../friendship/presentation/friendship_provider.dart';
+import '../../point/data/media_api.dart';
+import '../../point/domain/media_item.dart';
 import '../data/follower_api.dart';
 import '../domain/counters.dart';
 import '../domain/follow_status.dart';
 
 /// Perfil de outro usuario, estilo Instagram: cabecalho com avatar +
-/// contadores, botoes Seguir/Amigo lado a lado e a area de aventuras
-/// privada (so amigos veem as trilhas no feed).
+/// contadores, botoes Seguir/Amigo lado a lado e a grade com as aventuras
+/// VISIVEIS dele (o backend filtra por visibilidade; sem nada visivel, a
+/// area mostra o cadeado de conta privada).
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, required this.userCode, required this.name});
 
@@ -24,9 +31,15 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   late final FollowerApi _api = FollowerApi(context.read<DioClient>().dio);
+  late final UserSearchApi _userApi = UserSearchApi(context.read<DioClient>().dio);
+  late final AdventureApi _adventureApi = AdventureApi(context.read<DioClient>().dio);
+  late final MediaApi _mediaApi = MediaApi(context.read<DioClient>().dio);
+
+  final Map<String, Future<List<MediaItem>>> _mediaByAdventure = {};
 
   FollowStatus? _followStatus;
   Counters? _counters;
+  List<Adventure> _adventures = const [];
   bool _loading = true;
   bool _processing = false;
 
@@ -53,6 +66,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
         setState(() => _loading = false);
       }
     }
+    await _loadAdventures();
+  }
+
+  /// Aventuras visiveis deste usuario (o backend filtra pela visibilidade).
+  /// O resumo resolve o codigo publico -> userId; qualquer falha mantem so
+  /// o cadeado de conta privada.
+  Future<void> _loadAdventures() async {
+    try {
+      final summary = await _userApi.summaryByCode(widget.userCode);
+      final page = await _adventureApi.listByUser(summary.id, size: 60);
+      if (mounted) {
+        setState(() => _adventures = page.content);
+      }
+    } catch (_) {
+      // Grade e complementar; o perfil segue com o cadeado.
+    }
+  }
+
+  Future<List<MediaItem>> _mediaOf(Adventure adventure) {
+    return _mediaByAdventure.putIfAbsent(
+      adventure.id,
+      () => _mediaApi.listByAdventure(adventure.id, size: 1),
+    );
   }
 
   Future<void> _toggleFollow() async {
@@ -147,32 +183,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 16),
                   const Divider(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 64, left: 32, right: 32),
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white24, width: 2),
-                          ),
-                          child: const Icon(Icons.lock_outline, size: 32),
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'As aventuras deste trilheiro sao privadas',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Siga e vire amigo para acompanhar as trilhas dele.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 12, color: Colors.white54),
-                        ),
-                      ],
+                  if (_adventures.isNotEmpty) ...[
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: Icon(Icons.grid_on, size: 22),
                     ),
-                  ),
+                    AdventureGrid(adventures: _adventures, mediaOf: _mediaOf),
+                  ] else
+                    Padding(
+                      padding: const EdgeInsets.only(top: 64, left: 32, right: 32),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white24, width: 2),
+                            ),
+                            child: const Icon(Icons.lock_outline, size: 32),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'As aventuras deste trilheiro sao privadas',
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Siga e vire amigo para acompanhar as trilhas dele.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 12, color: Colors.white54),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
