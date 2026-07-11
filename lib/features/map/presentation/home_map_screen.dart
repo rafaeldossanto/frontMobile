@@ -18,6 +18,8 @@ import '../../path/domain/discovered_trail.dart';
 import '../../tracking/data/tracking_api.dart';
 import '../../tracking/domain/live_session.dart';
 import '../data/location_service.dart';
+import '../data/place_search_service.dart';
+import '../domain/place.dart';
 
 /// Home do app (estilo Strava/helios): mapa escuro em tela cheia com as
 /// trilhas rastreadas das aventuras plotadas em cores vivas. Embaixo, um
@@ -73,6 +75,8 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   final _mapController = MapController();
   final _locationService = LocationService();
   final _pageController = PageController(viewportFraction: 0.88);
+  final _placeSearchService = PlaceSearchService();
+  final _placeSearchController = TextEditingController();
 
   late final PathApi _pathApi = PathApi(context.read<DioClient>().dio);
   late final TrackingApi _trackingApi = TrackingApi(context.read<DioClient>().dio);
@@ -85,6 +89,14 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   List<DiscoveredTrail> _community = const [];
   List<LiveSession> _live = const [];
   Timer? _discoverDebounce;
+
+  // Busca de lugar (luneta): campo sobre o mapa, sugestoes do geocoding e um
+  // pin temporario no lugar escolhido.
+  bool _placeSearchOpen = false;
+  bool _placeSearching = false;
+  List<Place> _places = const [];
+  Place? _foundPlace;
+  Timer? _placeSearchDebounce;
 
   // Hit-test das polylines da comunidade: toque abre o card da trilha.
   final LayerHitNotifier<DiscoveredTrail> _communityHit = ValueNotifier(null);
@@ -101,6 +113,8 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   @override
   void dispose() {
     _discoverDebounce?.cancel();
+    _placeSearchDebounce?.cancel();
+    _placeSearchController.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -377,9 +391,28 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                     ),
                   ],
                 ),
+              if (_foundPlace != null)
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: LatLng(_foundPlace!.latitude, _foundPlace!.longitude),
+                      width: 44,
+                      height: 44,
+                      alignment: Alignment.topCenter,
+                      child: GestureDetector(
+                        onTap: () => setState(() => _foundPlace = null),
+                        child: Icon(
+                          Icons.place,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 38,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
-          _topBar(context),
+          if (_placeSearchOpen) _placeSearchOverlay(context) else _topBar(context),
           if (_loading)
             const Positioned(
               top: 100,
@@ -453,15 +486,169 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                 const Text('Trilha', style: AppTheme.wordmark),
                 const Spacer(),
                 IconButton(
-                  tooltip: 'Amizades',
-                  icon: const Icon(Icons.favorite_border),
-                  onPressed: () => context.push('/amizades'),
+                  tooltip: 'Buscar lugar',
+                  icon: const Icon(Icons.search),
+                  onPressed: () => setState(() => _placeSearchOpen = true),
                 ),
                 IconButton(
                   tooltip: 'Sair',
                   icon: const Icon(Icons.logout),
                   onPressed: () => context.read<AuthProvider>().logout(),
                 ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Debounce da digitacao: evita buscar a cada tecla e respeita o limite de
+  /// 1 req/s do Nominatim.
+  void _onPlaceTermChanged(String term) {
+    _placeSearchDebounce?.cancel();
+    if (term.trim().length < 3) {
+      setState(() {
+        _places = const [];
+        _placeSearching = false;
+      });
+      return;
+    }
+    setState(() => _placeSearching = true);
+    _placeSearchDebounce = Timer(
+      const Duration(milliseconds: 400),
+      () => _searchPlaces(term),
+    );
+  }
+
+  Future<void> _searchPlaces(String term) async {
+    try {
+      final places = await _placeSearchService.search(term.trim());
+      if (mounted && _placeSearchOpen) {
+        setState(() {
+          _places = places;
+          _placeSearching = false;
+        });
+      }
+    } catch (_) {
+      // Geocoding e opcional; sem resultado a lista simplesmente nao aparece.
+      if (mounted) {
+        setState(() => _placeSearching = false);
+      }
+    }
+  }
+
+  /// Escolheu uma sugestao: fecha a busca, voa ate o lugar e solta um pin
+  /// temporario (tocar no pin remove).
+  void _selectPlace(Place place) {
+    _placeSearchDebounce?.cancel();
+    _placeSearchController.clear();
+    setState(() {
+      _foundPlace = place;
+      _placeSearchOpen = false;
+      _places = const [];
+      _placeSearching = false;
+    });
+    if (_mapReady) {
+      _mapController.move(LatLng(place.latitude, place.longitude), 13);
+    }
+  }
+
+  /// X do campo: com texto limpa; vazio fecha a busca.
+  void _clearOrClosePlaceSearch() {
+    _placeSearchDebounce?.cancel();
+    final hadText = _placeSearchController.text.isNotEmpty;
+    _placeSearchController.clear();
+    setState(() {
+      _places = const [];
+      _placeSearching = false;
+      if (!hadText) {
+        _placeSearchOpen = false;
+      }
+    });
+  }
+
+  /// Luneta da home: campo sobre o mapa com sugestoes do geocoding, no lugar
+  /// da barra do topo enquanto a busca esta aberta.
+  Widget _placeSearchOverlay(BuildContext context) {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.black.withValues(alpha: 0.85), Colors.transparent],
+          ),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
+            child: Column(
+              children: [
+                TextField(
+                  controller: _placeSearchController,
+                  autofocus: true,
+                  textInputAction: TextInputAction.search,
+                  onChanged: _onPlaceTermChanged,
+                  onSubmitted: (term) {
+                    _placeSearchDebounce?.cancel();
+                    if (term.trim().length >= 3) {
+                      _searchPlaces(term);
+                    }
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Buscar lugar (ex: Pico das Agulhas Negras)',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: IconButton(
+                      tooltip: 'Limpar / fechar',
+                      icon: const Icon(Icons.close),
+                      onPressed: _clearOrClosePlaceSearch,
+                    ),
+                  ),
+                ),
+                if (_placeSearching)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 10),
+                    child: LinearProgressIndicator(minHeight: 2),
+                  ),
+                if (_places.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      children: [
+                        for (final place in _places)
+                          ListTile(
+                            dense: true,
+                            leading: Icon(
+                              Icons.place_outlined,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            title: Text(
+                              place.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: place.subtitle.isEmpty
+                                ? null
+                                : Text(
+                                    place.subtitle,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 11, color: Colors.white54),
+                                  ),
+                            onTap: () => _selectPlace(place),
+                          ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
