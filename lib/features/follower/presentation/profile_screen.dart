@@ -37,6 +37,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   final Map<String, Future<List<MediaItem>>> _mediaByAdventure = {};
 
+  // Botoes do perfil mais baixos e com fonte menor que o padrao do tema.
+  static final _compactButtonStyle = OutlinedButton.styleFrom(
+    minimumSize: const Size.fromHeight(34),
+    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+    visualDensity: VisualDensity.compact,
+  );
+
   FollowStatus? _followStatus;
   Counters? _counters;
   List<Adventure> _adventures = const [];
@@ -151,7 +158,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                     child: Row(
                       children: [
-                        StoryAvatar(name: widget.name, radius: 38),
+                        StoryAvatar(name: widget.name, radius: 30),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Row(
@@ -169,7 +176,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                    child: Text(widget.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    child: Text(
+                      widget.name,
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -185,8 +195,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const Divider(height: 1),
                   if (_adventures.isNotEmpty) ...[
                     const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: Icon(Icons.grid_on, size: 22),
+                      padding: EdgeInsets.symmetric(vertical: 6),
+                      child: Icon(Icons.grid_on, size: 20),
                     ),
                     AdventureGrid(adventures: _adventures, mediaOf: _mediaOf),
                   ] else
@@ -195,17 +205,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       child: Column(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white24, width: 2),
                             ),
-                            child: const Icon(Icons.lock_outline, size: 32),
+                            child: const Icon(Icons.lock_outline, size: 28),
                           ),
                           const SizedBox(height: 12),
                           const Text(
                             'As aventuras deste trilheiro sao privadas',
-                            style: TextStyle(fontWeight: FontWeight.w600),
+                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                           ),
                           const SizedBox(height: 4),
                           const Text(
@@ -227,8 +237,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       onTap: onTap,
       child: Column(
         children: [
-          Text('$value', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-          Text(label, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+          Text('$value', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+          Text(label, style: const TextStyle(fontSize: 11, color: Colors.white70)),
         ],
       ),
     );
@@ -240,15 +250,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
         : Text(isFollowing ? 'Seguindo' : 'Seguir');
     return isFollowing
-        ? OutlinedButton(onPressed: _processing ? null : _toggleFollow, child: child)
-        : FilledButton(onPressed: _processing ? null : _toggleFollow, child: child);
+        ? OutlinedButton(
+            style: _compactButtonStyle,
+            onPressed: _processing ? null : _toggleFollow,
+            child: child,
+          )
+        : FilledButton(
+            style: _compactButtonStyle,
+            onPressed: _processing ? null : _toggleFollow,
+            child: child,
+          );
   }
 
   Widget _addFriendButton() {
     final isMutual = _followStatus?.isMutual ?? false;
     return OutlinedButton.icon(
+      style: _compactButtonStyle,
       onPressed: isMutual ? _addFriend : null,
-      icon: const Icon(Icons.person_add_alt, size: 18),
+      icon: const Icon(Icons.person_add_alt, size: 16),
       label: Text(isMutual ? 'Adicionar amigo' : 'Amigo (siga mutuo)'),
     );
   }

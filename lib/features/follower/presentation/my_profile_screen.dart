@@ -30,6 +30,13 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   final Map<String, Future<List<MediaItem>>> _mediaByAdventure = {};
   Counters? _counters;
 
+  // Botoes do perfil mais baixos e com fonte menor que o padrao do tema.
+  static final _compactButtonStyle = OutlinedButton.styleFrom(
+    minimumSize: const Size.fromHeight(34),
+    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+    visualDensity: VisualDensity.compact,
+  );
+
   @override
   void initState() {
     super.initState();
@@ -110,7 +117,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: Row(
                 children: [
-                  StoryAvatar(name: user?.name ?? '?', radius: 38, showRing: false),
+                  StoryAvatar(name: user?.name ?? '?', radius: 30, showRing: false),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Row(
@@ -132,9 +139,12 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(user?.name ?? '', style: const TextStyle(fontWeight: FontWeight.w600)),
+                  Text(
+                    user?.name ?? '',
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
                   if (user != null)
-                    Text(user.email, style: const TextStyle(fontSize: 12, color: Colors.white54)),
+                    Text(user.email, style: const TextStyle(fontSize: 11, color: Colors.white54)),
                 ],
               ),
             ),
@@ -144,6 +154,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
+                      style: _compactButtonStyle,
                       onPressed: () => context.push('/regioes'),
                       child: const Text('Minhas pastas'),
                     ),
@@ -151,6 +162,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton(
+                      style: _compactButtonStyle,
                       onPressed: () => context.push('/amizades'),
                       child: const Text('Amizades'),
                     ),
@@ -161,8 +173,8 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
             const SizedBox(height: 4),
             const Divider(height: 1),
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: Icon(Icons.grid_on, size: 22),
+              padding: EdgeInsets.symmetric(vertical: 6),
+              child: Icon(Icons.grid_on, size: 20),
             ),
             _grid(provider),
           ],
@@ -176,8 +188,8 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
       onTap: onTap,
       child: Column(
         children: [
-          Text('$value', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-          Text(label, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+          Text('$value', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+          Text(label, style: const TextStyle(fontSize: 11, color: Colors.white70)),
         ],
       ),
     );
