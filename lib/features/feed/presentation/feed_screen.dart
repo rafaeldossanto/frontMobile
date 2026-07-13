@@ -40,6 +40,11 @@ class _FeedScreenState extends State<FeedScreen> {
   int _page = 0;
   String? _error;
 
+  // Stories minimizam quando o feed rola para baixo e reaparecem no topo.
+  static const _storiesHeight = 104.0;
+  static const _storiesCollapseOffset = 40.0;
+  bool _storiesVisible = true;
+
   @override
   void initState() {
     super.initState();
@@ -53,11 +58,16 @@ class _FeedScreenState extends State<FeedScreen> {
     super.dispose();
   }
 
-  /// Paginacao infinita: chegando perto do fim, busca a proxima pagina.
+  /// Paginacao infinita (perto do fim busca a proxima pagina) e colapso dos
+  /// stories (longe do topo eles minimizam; de volta ao topo, reaparecem).
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 400) {
       _loadMore();
+    }
+    final showStories = _scrollController.position.pixels <= _storiesCollapseOffset;
+    if (showStories != _storiesVisible) {
+      setState(() => _storiesVisible = showStories);
     }
   }
 
@@ -162,55 +172,79 @@ class _FeedScreenState extends State<FeedScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return ListView(
-      controller: _scrollController,
+    return Column(
       children: [
-        _storiesRow(auth),
+        _collapsibleStories(auth),
         const Divider(height: 1),
-        if (_posts.isEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 96, left: 32, right: 32),
-            child: Column(
-              children: [
-                Icon(Icons.photo_camera_outlined, size: 56, color: Colors.white38),
-                const SizedBox(height: 12),
-                Text(
-                  _error ??
-                      'Nada por aqui ainda.\nSiga trilheiros ou toque no + para criar uma aventura.',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white70),
+        Expanded(
+          child: ListView(
+            controller: _scrollController,
+            children: [
+              if (_posts.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 96, left: 32, right: 32),
+                  child: Column(
+                    children: [
+                      Icon(Icons.photo_camera_outlined, size: 56, color: Colors.white38),
+                      const SizedBox(height: 12),
+                      Text(
+                        _error ??
+                            'Nada por aqui ainda.\nSiga trilheiros ou toque no + para criar uma aventura.',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                    ],
+                  ),
+                )
+              else ...[
+                ..._posts.map(
+                  (post) => _PostCard(
+                    post: post,
+                    isMine: post.userId == auth.userId,
+                    media: _mediaOf(post),
+                  ),
                 ),
+                if (_hasMore)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  ),
               ],
-            ),
-          )
-        else ...[
-          ..._posts.map(
-            (post) => _PostCard(
-              post: post,
-              isMine: post.userId == auth.userId,
-              media: _mediaOf(post),
-            ),
+            ],
           ),
-          if (_hasMore)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Center(
-                child: SizedBox(
-                  height: 22,
-                  width: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-            ),
-        ],
+        ),
       ],
+    );
+  }
+
+  /// Stories fora da lista, num cabecalho que encolhe (altura -> 0) quando o
+  /// usuario rola o feed para baixo e reabre quando ele volta ao topo.
+  Widget _collapsibleStories(AuthProvider auth) {
+    return ClipRect(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeInOut,
+        height: _storiesVisible ? _storiesHeight : 0,
+        child: OverflowBox(
+          alignment: Alignment.topCenter,
+          minHeight: _storiesHeight,
+          maxHeight: _storiesHeight,
+          child: _storiesRow(auth),
+        ),
+      ),
     );
   }
 
   Widget _storiesRow(AuthProvider auth) {
     final myName = auth.user?.name ?? 'Voce';
     return SizedBox(
-      height: 104,
+      height: _storiesHeight,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
