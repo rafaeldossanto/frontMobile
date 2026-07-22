@@ -405,6 +405,12 @@ class _PostCardState extends State<_PostCard> {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 11, color: Colors.white54),
                   ),
+                  Text(
+                    post.metricsLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 10, color: Colors.white38),
+                  ),
                 ],
               ),
             ),
