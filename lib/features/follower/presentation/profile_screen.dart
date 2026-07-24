@@ -37,9 +37,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   final Map<String, Future<List<MediaItem>>> _mediaByAdventure = {};
 
-  // Botoes do perfil mais baixos e com fonte menor que o padrao do tema.
+  // Botoes Seguir/Amigo: mais retangulares (cantos menos arredondados) e um
+  // pouco mais baixos que o padrao do tema.
   static final _compactButtonStyle = OutlinedButton.styleFrom(
-    minimumSize: const Size.fromHeight(34),
+    minimumSize: const Size.fromHeight(30),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(6)),
+    ),
     textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
     visualDensity: VisualDensity.compact,
   );

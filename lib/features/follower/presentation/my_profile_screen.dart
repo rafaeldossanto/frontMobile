@@ -98,7 +98,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
         ),
         actions: [
           IconButton(
-            tooltip: 'Minhas pastas',
+            tooltip: 'Minhas colecoes',
             icon: const Icon(Icons.folder_outlined),
             onPressed: () => context.push('/regioes'),
           ),
@@ -136,16 +136,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user?.name ?? '',
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                  ),
-                  if (user != null)
-                    Text(user.email, style: const TextStyle(fontSize: 11, color: Colors.white54)),
-                ],
+              child: Text(
+                user?.name ?? '',
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
               ),
             ),
             Padding(
@@ -156,7 +149,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                     child: OutlinedButton(
                       style: _compactButtonStyle,
                       onPressed: () => context.push('/regioes'),
-                      child: const Text('Minhas pastas'),
+                      child: const Text('Minhas colecoes'),
                     ),
                   ),
                   const SizedBox(width: 8),
