@@ -5,7 +5,7 @@ import '../domain/region.dart';
 import 'region_form_sheet.dart';
 import 'region_provider.dart';
 
-/// My folders (regions): list, create, edit and delete.
+/// My collections (regions): list, create, edit and delete.
 class MyRegionsScreen extends StatefulWidget {
   const MyRegionsScreen({super.key});
 
@@ -32,8 +32,8 @@ class _MyRegionsScreenState extends State<MyRegionsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Excluir pasta'),
-        content: Text('Excluir "${region.name}"? As aventuras nao sao apagadas, so saem da pasta.'),
+        title: const Text('Excluir colecao'),
+        content: Text('Excluir "${region.name}"? As aventuras nao sao apagadas, so saem da colecao.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
           FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Excluir')),
@@ -49,7 +49,7 @@ class _MyRegionsScreenState extends State<MyRegionsScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<RegionProvider>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Minhas pastas')),
+      appBar: AppBar(title: const Text('Minhas colecoes')),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openForm(),
         child: const Icon(Icons.create_new_folder),
@@ -69,7 +69,7 @@ class _MyRegionsScreenState extends State<MyRegionsScreen> {
       return ListView(children: [
         Padding(
           padding: const EdgeInsets.only(top: 120, left: 24, right: 24),
-          child: Text(provider.error ?? 'Nenhuma pasta ainda.\nToque no + para criar.', textAlign: TextAlign.center),
+          child: Text(provider.error ?? 'Nenhuma colecao ainda.\nToque no + para criar.', textAlign: TextAlign.center),
         ),
       ]);
     }
@@ -81,7 +81,7 @@ class _MyRegionsScreenState extends State<MyRegionsScreen> {
         final r = provider.regions[index];
         return Card(
           child: ListTile(
-            leading: const Icon(Icons.folder),
+            leading: _cover(r),
             title: Text(r.name),
             subtitle: Text('${r.visibility} • ${r.cities.length} cidade(s)'),
             onTap: () => _openForm(region: r),
@@ -92,6 +92,23 @@ class _MyRegionsScreenState extends State<MyRegionsScreen> {
           ),
         );
       },
+    );
+  }
+
+  /// Cover thumbnail; without a photo, falls back to the folder icon.
+  Widget _cover(Region region) {
+    if (region.coverUrl == null) {
+      return const Icon(Icons.folder);
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.network(
+        region.coverUrl!,
+        width: 44,
+        height: 44,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => const Icon(Icons.folder),
+      ),
     );
   }
 }

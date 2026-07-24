@@ -143,7 +143,7 @@ class _AdventureDetailScreenState extends State<AdventureDetailScreen> {
         children: [
           ListTile(
             leading: const Icon(Icons.folder_off),
-            title: const Text('Nenhuma (tirar da pasta)'),
+            title: const Text('Nenhuma (tirar da colecao)'),
             onTap: () => Navigator.pop(context, ''),
           ),
           ...regionProvider.regions.map((r) => ListTile(
@@ -184,7 +184,7 @@ class _AdventureDetailScreenState extends State<AdventureDetailScreen> {
               onPressed: _leaveAdventure,
             ),
           IconButton(
-            tooltip: 'Mover para pasta',
+            tooltip: 'Mover para colecao',
             icon: const Icon(Icons.drive_file_move),
             onPressed: _moveToFolder,
           ),

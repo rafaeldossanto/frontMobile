@@ -5,7 +5,7 @@ import '../data/region_api.dart';
 import '../domain/city.dart';
 import '../domain/region.dart';
 
-/// State for my regions (folders): list / create / edit / delete.
+/// State for my regions (collections): list / create / edit / delete.
 class RegionProvider extends ChangeNotifier {
   RegionProvider(this._api);
 
@@ -37,14 +37,17 @@ class RegionProvider extends ChangeNotifier {
     String? id,
     required String name,
     String? description,
+    String? coverUrl,
     required String visibility,
     required List<City> cities,
   }) async {
     try {
       if (id == null) {
-        await _api.create(name: name, description: description, visibility: visibility, cities: cities);
+        await _api.create(
+            name: name, description: description, coverUrl: coverUrl, visibility: visibility, cities: cities);
       } else {
-        await _api.update(id, name: name, description: description, visibility: visibility, cities: cities);
+        await _api.update(id,
+            name: name, description: description, coverUrl: coverUrl, visibility: visibility, cities: cities);
       }
       await load();
       return true;

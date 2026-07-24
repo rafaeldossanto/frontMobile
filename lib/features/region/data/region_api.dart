@@ -5,15 +5,18 @@ import '../../adventure/domain/adventure.dart';
 import '../domain/city.dart';
 import '../domain/region.dart';
 
-/// CRUD of regions (folders) + discovery, over /bff/regioes.
+/// CRUD of regions (collections) + discovery, over /bff/regioes.
 class RegionApi {
   RegionApi(this._dio);
 
   final Dio _dio;
 
-  Map<String, dynamic> _body(String name, String? description, String visibility, List<City> cities) => {
+  Map<String, dynamic> _body(
+          String name, String? description, String? coverUrl, String visibility, List<City> cities) =>
+      {
         'nome': name,
         'descricao': description,
+        'capaUrl': coverUrl,
         'visibilidade': visibility,
         'cidades': cities.map((c) => c.toJson()).toList(),
       };
@@ -26,10 +29,11 @@ class RegionApi {
   Future<Region> create({
     required String name,
     String? description,
+    String? coverUrl,
     required String visibility,
     required List<City> cities,
   }) async {
-    final resp = await _dio.post('/bff/regioes', data: _body(name, description, visibility, cities));
+    final resp = await _dio.post('/bff/regioes', data: _body(name, description, coverUrl, visibility, cities));
     return Region.fromJson(resp.data as Map<String, dynamic>);
   }
 
@@ -37,10 +41,11 @@ class RegionApi {
     String id, {
     required String name,
     String? description,
+    String? coverUrl,
     required String visibility,
     required List<City> cities,
   }) async {
-    final resp = await _dio.put('/bff/regioes/$id', data: _body(name, description, visibility, cities));
+    final resp = await _dio.put('/bff/regioes/$id', data: _body(name, description, coverUrl, visibility, cities));
     return Region.fromJson(resp.data as Map<String, dynamic>);
   }
 

@@ -9,7 +9,7 @@ import '../../region/domain/region.dart';
 import '../../../shared/widgets/story_avatar.dart';
 
 /// Aba de busca estilo Instagram: campo no topo procura trilheiros; sem termo,
-/// mostra a grade "descobrir" com as pastas publicas e de amigos.
+/// mostra a grade "descobrir" com as colecoes publicas e de amigos.
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
 
@@ -98,7 +98,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     if (_regions.isEmpty) {
       return const Center(
         child: Text(
-          'Nenhuma pasta publica ou de amigos por aqui.',
+          'Nenhuma colecao publica ou de amigos por aqui.',
           style: TextStyle(color: Colors.white54),
         ),
       );
@@ -125,7 +125,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       onTap: () => context.push('/regioes/detalhe', extra: region),
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           gradient: LinearGradient(
@@ -137,21 +137,38 @@ class _ExploreScreenState extends State<ExploreScreen> {
             ],
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            Icon(Icons.public, color: theme.colorScheme.primary),
-            const Spacer(),
-            Text(
-              region.name,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              '${region.cities.length} cidade(s) • ${region.visibility}',
-              style: const TextStyle(fontSize: 11, color: Colors.white54),
+            // Capa da colecao como fundo, escurecida para o texto continuar legivel.
+            if (region.coverUrl != null)
+              Image.network(
+                region.coverUrl!,
+                fit: BoxFit.cover,
+                color: Colors.black38,
+                colorBlendMode: BlendMode.darken,
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.public, color: theme.colorScheme.primary),
+                  const Spacer(),
+                  Text(
+                    region.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${region.cities.length} cidade(s) • ${region.visibility}',
+                    style: const TextStyle(fontSize: 11, color: Colors.white70),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

@@ -99,7 +99,7 @@ class _RegionDetailScreenState extends State<RegionDetailScreen> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_adventures.isEmpty) {
-      return const Center(child: Text('Nenhuma aventura visivel nesta pasta.'));
+      return const Center(child: Text('Nenhuma aventura visivel nesta colecao.'));
     }
     return ListView.separated(
       padding: const EdgeInsets.all(16),

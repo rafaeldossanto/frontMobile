@@ -146,14 +146,14 @@ class _CreateAdventureSheetState extends State<CreateAdventureSheet> {
 
     if (_regions.isEmpty) {
       return const InputDecorator(
-        decoration: InputDecoration(labelText: 'Pasta (opcional)'),
-        child: Text('Nenhuma pasta — a aventura ficara solta'),
+        decoration: InputDecoration(labelText: 'Colecao (opcional)'),
+        child: Text('Nenhuma colecao — a aventura ficara solta'),
       );
     }
 
     return DropdownButtonFormField<Region>(
       initialValue: _selectedRegion,
-      decoration: const InputDecoration(labelText: 'Pasta (opcional)'),
+      decoration: const InputDecoration(labelText: 'Colecao (opcional)'),
       items: _regions
           .map((r) => DropdownMenuItem(value: r, child: Text(r.name)))
           .toList(),

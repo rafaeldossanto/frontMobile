@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/network/dio_client.dart';
 import '../../map/data/location_service.dart';
+import '../../point/data/media_api.dart';
 import '../domain/city.dart';
 import '../domain/region.dart';
 import 'region_provider.dart';
 
-/// Form to create/edit a folder (region): name, description, visibility and cities.
-/// region == null creates; otherwise edits.
+/// Form to create/edit a collection (region): cover photo, name, description,
+/// visibility and cities. region == null creates; otherwise edits.
 class RegionFormSheet extends StatefulWidget {
   const RegionFormSheet({super.key, this.region});
 
@@ -19,10 +22,13 @@ class RegionFormSheet extends StatefulWidget {
 
 class _RegionFormSheetState extends State<RegionFormSheet> {
   final _formKey = GlobalKey<FormState>();
+  final _picker = ImagePicker();
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
   late String _visibility;
   late List<City> _cities;
+  String? _coverUrl;
+  bool _uploadingCover = false;
   bool _saving = false;
 
   @override
@@ -33,6 +39,7 @@ class _RegionFormSheetState extends State<RegionFormSheet> {
     _descriptionController = TextEditingController(text: r?.description ?? '');
     _visibility = r?.visibility ?? 'PRIVADA';
     _cities = List.of(r?.cities ?? const []);
+    _coverUrl = r?.coverUrl;
   }
 
   @override
@@ -52,6 +59,32 @@ class _RegionFormSheetState extends State<RegionFormSheet> {
     }
   }
 
+  /// Picks a photo from the gallery and uploads it to the media service; the
+  /// returned URL is saved with the collection as its cover.
+  Future<void> _pickCover() async {
+    final photo = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (photo == null || !mounted) {
+      return;
+    }
+    setState(() => _uploadingCover = true);
+    try {
+      final url = await MediaApi(context.read<DioClient>().dio).uploadMedia(photo.path);
+      if (mounted) {
+        setState(() => _coverUrl = url);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Nao foi possivel enviar a capa')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _uploadingCover = false);
+      }
+    }
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -61,6 +94,7 @@ class _RegionFormSheetState extends State<RegionFormSheet> {
           id: widget.region?.id,
           name: _nameController.text.trim(),
           description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
+          coverUrl: _coverUrl,
           visibility: _visibility,
           cities: _cities,
         );
@@ -72,15 +106,68 @@ class _RegionFormSheetState extends State<RegionFormSheet> {
       Navigator.of(context).pop();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nao foi possivel salvar a pasta')),
+        const SnackBar(content: Text('Nao foi possivel salvar a colecao')),
       );
     }
+  }
+
+  /// Cover area: tap to pick/replace the photo; the X removes it.
+  Widget _coverPicker() {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: _uploadingCover ? null : _pickCover,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        height: 120,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: theme.colorScheme.surfaceContainerHighest,
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (_coverUrl != null)
+              Image.network(_coverUrl!, fit: BoxFit.cover)
+            else
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_photo_alternate_outlined,
+                      size: 32, color: theme.colorScheme.primary),
+                  const SizedBox(height: 4),
+                  const Text('Adicionar capa',
+                      style: TextStyle(fontSize: 12, color: Colors.white54)),
+                ],
+              ),
+            if (_uploadingCover)
+              const ColoredBox(
+                color: Colors.black54,
+                child: Center(
+                  child: SizedBox(
+                      height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+                ),
+              ),
+            if (_coverUrl != null && !_uploadingCover)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: IconButton(
+                  style: IconButton.styleFrom(backgroundColor: Colors.black54),
+                  icon: const Icon(Icons.close, size: 18),
+                  onPressed: () => setState(() => _coverUrl = null),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    return Padding(
+    return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(24, 24, 24, 24 + bottomInset),
       child: Form(
         key: _formKey,
@@ -88,8 +175,10 @@ class _RegionFormSheetState extends State<RegionFormSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(widget.region == null ? 'Nova pasta' : 'Editar pasta',
+            Text(widget.region == null ? 'Nova colecao' : 'Editar colecao',
                 style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
+            _coverPicker(),
             const SizedBox(height: 16),
             TextFormField(
               controller: _nameController,
