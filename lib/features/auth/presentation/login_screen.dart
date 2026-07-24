@@ -50,10 +50,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(Icons.terrain, size: 56, color: theme.colorScheme.primary),
+                  const _PeakLogo(size: 56),
                   const SizedBox(height: 8),
                   const Text(
-                    'Trilha',
+                    'Trisha',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: 'serif',
@@ -61,12 +61,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       fontWeight: FontWeight.w700,
                       fontSize: 44,
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Compartilhe suas trilhas',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white54),
                   ),
                   const SizedBox(height: 32),
                   TextFormField(
@@ -76,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     validator: (v) =>
                         (v == null || v.trim().isEmpty) ? 'Informe seu nome' : null,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -89,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   if (auth.error != null) ...[
                     Text(
                       auth.error!,
@@ -116,4 +110,43 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+}
+
+/// Logo do login: picos de montanha (sem base), em branco.
+class _PeakLogo extends StatelessWidget {
+  const _PeakLogo({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size(size, size),
+      painter: _PeakLogoPainter(),
+    );
+  }
+}
+
+class _PeakLogoPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final scale = size.width / 24;
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2 * scale
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final path = Path()
+      ..moveTo(3 * scale, 19 * scale)
+      ..lineTo(11 * scale, 7 * scale)
+      ..lineTo(19 * scale, 19 * scale)
+      ..moveTo(13 * scale, 19 * scale)
+      ..lineTo(18 * scale, 12 * scale)
+      ..lineTo(23 * scale, 19 * scale);
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _PeakLogoPainter oldDelegate) => false;
 }

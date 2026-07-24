@@ -483,7 +483,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Row(
               children: [
-                const Text('Trilha', style: AppTheme.wordmark),
+                const Text('Trisha', style: AppTheme.wordmark),
                 const Spacer(),
                 IconButton(
                   tooltip: 'Buscar lugar',

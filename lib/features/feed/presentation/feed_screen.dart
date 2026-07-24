@@ -146,7 +146,7 @@ class _FeedScreenState extends State<FeedScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Trilha', style: AppTheme.wordmark),
+        title: const Text('Trisha', style: AppTheme.wordmark),
         actions: [
           IconButton(
             tooltip: 'Amizades',
