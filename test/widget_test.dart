@@ -9,18 +9,40 @@ import 'package:trilha_app/features/auth/presentation/auth_provider.dart';
 import 'package:trilha_app/features/auth/presentation/login_screen.dart';
 
 void main() {
-  testWidgets('login screen mostra os campos e o botao Entrar', (tester) async {
+  Future<void> pumpLogin(WidgetTester tester) {
     final auth = AuthProvider(AuthRepository(AuthApi(Dio()), TokenStorage()));
 
-    await tester.pumpWidget(
+    return tester.pumpWidget(
       ChangeNotifierProvider<AuthProvider>.value(
         value: auth,
         child: const MaterialApp(home: LoginScreen()),
       ),
     );
+  }
+
+  testWidgets('login screen mostra os campos e o botao Entrar', (tester) async {
+    await pumpLogin(tester);
 
     expect(find.text('Nome'), findsOneWidget);
     expect(find.text('E-mail'), findsOneWidget);
     expect(find.text('Entrar'), findsOneWidget);
+  });
+
+  // Regressao: a Column do formulario usa CrossAxisAlignment.stretch, o que dava
+  // largura cheia ao CustomPaint do logo — e como o painter escala por
+  // `size.width / 24`, ele era desenhado por cima da tela inteira.
+  testWidgets('logo do login nao estica com a largura da tela', (tester) async {
+    final logo = find.byWidgetPredicate(
+      (w) => w is CustomPaint && w.painter.runtimeType.toString().contains('PeakLogo'),
+    );
+
+    tester.view.physicalSize = const Size(420, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await pumpLogin(tester);
+
+    expect(logo, findsOneWidget);
+    expect(tester.getSize(logo), const Size(56, 56));
   });
 }

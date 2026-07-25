@@ -50,7 +50,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const _PeakLogo(size: 56),
+                  // Center evita que o stretch da Column estique o CustomPaint:
+                  // o painter escala pela largura recebida e o logo sairia da tela.
+                  const Center(child: _PeakLogo(size: 56)),
                   const SizedBox(height: 8),
                   const Text(
                     'Trisha',

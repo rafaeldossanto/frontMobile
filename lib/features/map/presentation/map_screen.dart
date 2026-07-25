@@ -301,7 +301,7 @@ class _MapScreenState extends State<MapScreen> {
                       Text('Objetivo'),
                     ],
                   ),
-                  activeColor: PinColors.gold,
+                  activeThumbColor: PinColors.gold,
                   value: mark?.goal ?? false,
                   onChanged: (goal) => _applyGoal(point, goal, setSheetState),
                 ),
