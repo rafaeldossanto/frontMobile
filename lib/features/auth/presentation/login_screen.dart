@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/theme/app_theme.dart';
 import 'auth_provider.dart';
 
 /// Login screen (dev): name + e-mail and the Enter button. Without a token, the router
@@ -57,12 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const Text(
                     'Trisha',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontFamily: 'serif',
-                      fontStyle: FontStyle.italic,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 44,
-                    ),
+                    style: AppTheme.wordmarkLarge,
                   ),
                   const SizedBox(height: 32),
                   TextFormField(

@@ -19,13 +19,27 @@ class AppTheme {
     Color(0xFF4F5BD5),
   ];
 
-  /// Wordmark do app (logo tipografica do AppBar e do login).
+  static const String _wordmarkFamily = 'Yellowtail';
+
+  /// Wordmark da marca (AppBar do feed e barra do mapa).
+  ///
+  /// Yellowtail e um script de pincel embarcado em `assets/fonts`. Duas regras
+  /// que o desenho impoe:
+  /// - sem `fontWeight`/`fontStyle`: a fonte tem peso unico e ja vem inclinada;
+  ///   pedir bold ou italic faz o Flutter sintetizar e deformar o traco;
+  /// - `letterSpacing` zero: as letras sao conectadas, e qualquer espacamento
+  ///   abre buracos na emenda.
   static const TextStyle wordmark = TextStyle(
-    fontFamily: 'serif',
-    fontStyle: FontStyle.italic,
-    fontWeight: FontWeight.w700,
-    fontSize: 26,
-    letterSpacing: 0.5,
+    fontFamily: _wordmarkFamily,
+    fontSize: 30,
+    letterSpacing: 0,
+  );
+
+  /// Mesma marca no tamanho da tela de entrar.
+  static const TextStyle wordmarkLarge = TextStyle(
+    fontFamily: _wordmarkFamily,
+    fontSize: 52,
+    letterSpacing: 0,
   );
 
   static ThemeData get dark {
