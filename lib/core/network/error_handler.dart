@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 
 /// Converts a caught exception into a user-friendly Portuguese message.
@@ -27,12 +29,41 @@ abstract final class ErrorHandler {
       case DioExceptionType.connectionError:
         return 'Sem conexao com o servidor. Verifique sua internet.';
       case DioExceptionType.badResponse:
-        return _fromStatus(e.response?.statusCode);
+        return _serverMessage(e.response) ?? _fromStatus(e.response?.statusCode);
       case DioExceptionType.cancel:
         return 'Requisicao cancelada.';
       default:
         return 'Erro de rede. Tente novamente.';
     }
+  }
+
+  /// Mensagem que o proprio backend escreveu para o usuario — "Email ou senha
+  /// invalidos" ajuda muito mais que o texto generico do status. So vale para
+  /// erros de cliente (4xx): em 5xx o corpo tende a ser tecnico.
+  static String? _serverMessage(Response<dynamic>? response) {
+    final status = response?.statusCode;
+    if (status == null || status >= 500) {
+      return null;
+    }
+    return _unwrapMessage(response?.data);
+  }
+
+  /// O GlobalExceptionHandler responde `{status, mensagem, timestamp}`. Quando o
+  /// erro vem de um servico atras do BFF, o corpo original chega cru dentro de
+  /// `mensagem` — por isso o desembrulho ate sobrar o texto de verdade.
+  static String? _unwrapMessage(Object? data) {
+    final message = data is Map ? data['mensagem'] : null;
+    if (message is! String || message.isEmpty) {
+      return null;
+    }
+    if (message.startsWith('{')) {
+      try {
+        return _unwrapMessage(jsonDecode(message));
+      } on FormatException {
+        return null;
+      }
+    }
+    return message;
   }
 
   static String _fromStatus(int? status) {

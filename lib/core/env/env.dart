@@ -11,4 +11,12 @@ class Env {
 
   /// Endpoint STOMP/SockJS do loc — o acompanhamento ao vivo nao passa pelo BFF.
   static String get locWsUrl => dotenv.get('LOC_WS_URL');
+
+  /// Web client ID do Google, usado como `serverClientId` no login social: e
+  /// ele que vira o `aud` do ID token que o Cadastro valida. Null enquanto nao
+  /// estiver configurado — o login com Google avisa em vez de falhar mudo.
+  static String? get googleServerClientId {
+    final value = dotenv.maybeGet('GOOGLE_SERVER_CLIENT_ID');
+    return (value == null || value.isEmpty) ? null : value;
+  }
 }

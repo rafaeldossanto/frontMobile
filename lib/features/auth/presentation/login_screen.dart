@@ -1,11 +1,17 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/peak_logo.dart';
 import 'auth_provider.dart';
 
-/// Login screen (dev): name + e-mail and the Enter button. Without a token, the router
-/// guard sends here; on login, it goes to /home.
+/// Tela de entrada: email + senha, criacao de conta e login pelos provedores
+/// sociais. Sem token, o guard do router manda para ca; ao autenticar, vai para
+/// /home. Em build de debug ainda ha o atalho do login sem senha, que usa o
+/// endpoint exclusivo do profile `dev` do backend.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -15,13 +21,14 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _passwordHidden = true;
 
   @override
   void dispose() {
-    _nameController.dispose();
     _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -31,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     await context.read<AuthProvider>().login(
           email: _emailController.text.trim(),
-          name: _nameController.text.trim(),
+          password: _passwordController.text,
         );
   }
 
@@ -39,6 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final theme = Theme.of(context);
+    final busy = auth.loading;
 
     return Scaffold(
       body: SafeArea(
@@ -53,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   // Center evita que o stretch da Column estique o CustomPaint:
                   // o painter escala pela largura recebida e o logo sairia da tela.
-                  const Center(child: _PeakLogo(size: 56)),
+                  const Center(child: PeakLogo(size: 56)),
                   const SizedBox(height: 8),
                   const Text(
                     'Trisha',
@@ -62,24 +70,34 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 32),
                   TextFormField(
-                    controller: _nameController,
-                    textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(labelText: 'Nome'),
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? 'Informe seu nome' : null,
-                  ),
-                  const SizedBox(height: 10),
-                  TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.done,
+                    textInputAction: TextInputAction.next,
+                    autofillHints: const [AutofillHints.email],
                     decoration: const InputDecoration(labelText: 'E-mail'),
-                    onFieldSubmitted: (_) => _submit(),
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) return 'Informe seu e-mail';
                       if (!v.contains('@')) return 'E-mail invalido';
                       return null;
                     },
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: _passwordHidden,
+                    textInputAction: TextInputAction.done,
+                    autofillHints: const [AutofillHints.password],
+                    decoration: InputDecoration(
+                      labelText: 'Senha',
+                      suffixIcon: IconButton(
+                        icon: Icon(_passwordHidden ? Icons.visibility_off : Icons.visibility),
+                        onPressed: () => setState(() => _passwordHidden = !_passwordHidden),
+                        tooltip: _passwordHidden ? 'Mostrar senha' : 'Ocultar senha',
+                      ),
+                    ),
+                    onFieldSubmitted: (_) => _submit(),
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? 'Informe sua senha' : null,
                   ),
                   const SizedBox(height: 20),
                   if (auth.error != null) ...[
@@ -91,8 +109,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 12),
                   ],
                   FilledButton(
-                    onPressed: auth.loading ? null : _submit,
-                    child: auth.loading
+                    onPressed: busy ? null : _submit,
+                    child: busy
                         ? const SizedBox(
                             height: 20,
                             width: 20,
@@ -100,6 +118,35 @@ class _LoginScreenState extends State<LoginScreen> {
                           )
                         : const Text('Entrar'),
                   ),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: busy ? null : () => context.push('/cadastro'),
+                    child: const Text('Criar conta'),
+                  ),
+                  const SizedBox(height: 24),
+                  const _OrDivider(),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: busy ? null : () => context.read<AuthProvider>().loginWithGoogle(),
+                    icon: const Icon(Icons.g_mobiledata, size: 28),
+                    label: const Text('Continuar com Google'),
+                  ),
+                  if (auth.appleAvailable) ...[
+                    const SizedBox(height: 10),
+                    SignInWithAppleButton(
+                      text: 'Continuar com Apple',
+                      style: SignInWithAppleButtonStyle.white,
+                      borderRadius: BorderRadius.circular(10),
+                      onPressed: busy ? null : () => context.read<AuthProvider>().loginWithApple(),
+                    ),
+                  ],
+                  if (kDebugMode) ...[
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: busy ? null : _openDevLogin,
+                      child: const Text('Entrar sem senha (dev)'),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -108,43 +155,100 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+
+  /// Atalho de desenvolvimento: cria ou recupera a conta pelo email e emite o
+  /// token sem senha nem confirmacao. Depende do profile `dev` no BFF.
+  Future<void> _openDevLogin() async {
+    final credentials = await showDialog<({String name, String email})>(
+      context: context,
+      builder: (_) => _DevLoginDialog(email: _emailController.text.trim()),
+    );
+    if (credentials == null || !mounted) {
+      return;
+    }
+    await context.read<AuthProvider>().devLogin(
+          email: credentials.email,
+          name: credentials.name,
+        );
+  }
 }
 
-/// Logo do login: picos de montanha (sem base), em branco.
-class _PeakLogo extends StatelessWidget {
-  const _PeakLogo({required this.size});
-
-  final double size;
+/// Linha divisoria com o rotulo entre o login por senha e os provedores sociais.
+class _OrDivider extends StatelessWidget {
+  const _OrDivider();
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size(size, size),
-      painter: _PeakLogoPainter(),
+    return Row(
+      children: [
+        const Expanded(child: Divider()),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            'ou entre com',
+            style: TextStyle(color: Theme.of(context).hintColor),
+          ),
+        ),
+        const Expanded(child: Divider()),
+      ],
     );
   }
 }
 
-class _PeakLogoPainter extends CustomPainter {
+class _DevLoginDialog extends StatefulWidget {
+  const _DevLoginDialog({required this.email});
+
+  final String email;
+
   @override
-  void paint(Canvas canvas, Size size) {
-    final scale = size.width / 24;
-    final paint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.2 * scale
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    final path = Path()
-      ..moveTo(3 * scale, 19 * scale)
-      ..lineTo(11 * scale, 7 * scale)
-      ..lineTo(19 * scale, 19 * scale)
-      ..moveTo(13 * scale, 19 * scale)
-      ..lineTo(18 * scale, 12 * scale)
-      ..lineTo(23 * scale, 19 * scale);
-    canvas.drawPath(path, paint);
+  State<_DevLoginDialog> createState() => _DevLoginDialogState();
+}
+
+class _DevLoginDialogState extends State<_DevLoginDialog> {
+  late final _nameController = TextEditingController();
+  late final _emailController = TextEditingController(text: widget.email);
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  void _confirm() {
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    if (name.isEmpty || !email.contains('@')) {
+      return;
+    }
+    Navigator.pop(context, (name: name, email: email));
   }
 
   @override
-  bool shouldRepaint(covariant _PeakLogoPainter oldDelegate) => false;
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Login de desenvolvimento'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(labelText: 'Nome'),
+            textInputAction: TextInputAction.next,
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(labelText: 'E-mail'),
+            onSubmitted: (_) => _confirm(),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+        FilledButton(onPressed: _confirm, child: const Text('Entrar')),
+      ],
+    );
+  }
 }

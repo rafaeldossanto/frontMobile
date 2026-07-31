@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
+import '../../features/auth/data/auth_repository.dart';
 import '../../features/auth/presentation/auth_provider.dart';
 import '../../features/auth/presentation/login_screen.dart';
+import '../../features/auth/presentation/sign_up_provider.dart';
+import '../../features/auth/presentation/sign_up_screen.dart';
 import '../../features/adventure/presentation/adventure_detail_screen.dart';
 import '../../features/adventure/presentation/adventures_screen.dart';
 import '../../features/explore/presentation/explore_screen.dart';
@@ -34,18 +38,29 @@ GoRouter buildRouter(AuthProvider auth) {
     initialLocation: '/home',
     refreshListenable: auth,
     redirect: (context, state) {
-      final goingToLogin = state.matchedLocation == '/login';
+      // Entrar e criar conta sao as unicas telas alcancaveis sem sessao.
+      const publicRoutes = {'/login', '/cadastro'};
+      final goingToPublicRoute = publicRoutes.contains(state.matchedLocation);
 
       if (!auth.isLoggedIn) {
-        return goingToLogin ? null : '/login';
+        return goingToPublicRoute ? null : '/login';
       }
-      if (goingToLogin) {
+      if (goingToPublicRoute) {
         return '/home';
       }
       return null;
     },
     routes: [
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        // O estado do cadastro nasce e morre com a tela: criado aqui, some ao
+        // voltar para o login em vez de sobreviver no MultiProvider da raiz.
+        path: '/cadastro',
+        builder: (context, state) => ChangeNotifierProvider(
+          create: (context) => SignUpProvider(context.read<AuthRepository>()),
+          child: const SignUpScreen(),
+        ),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => MainShell(shell: shell),
         branches: [

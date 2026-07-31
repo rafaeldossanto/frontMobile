@@ -5,12 +5,16 @@ import 'package:provider/provider.dart';
 import 'package:trilha_app/core/storage/token_storage.dart';
 import 'package:trilha_app/features/auth/data/auth_api.dart';
 import 'package:trilha_app/features/auth/data/auth_repository.dart';
+import 'package:trilha_app/features/auth/data/social_sign_in.dart';
 import 'package:trilha_app/features/auth/presentation/auth_provider.dart';
 import 'package:trilha_app/features/auth/presentation/login_screen.dart';
 
 void main() {
   Future<void> pumpLogin(WidgetTester tester) {
-    final auth = AuthProvider(AuthRepository(AuthApi(Dio()), TokenStorage()));
+    final auth = AuthProvider(
+      AuthRepository(AuthApi(Dio()), TokenStorage()),
+      SocialSignIn(),
+    );
 
     return tester.pumpWidget(
       ChangeNotifierProvider<AuthProvider>.value(
@@ -23,9 +27,18 @@ void main() {
   testWidgets('login screen mostra os campos e o botao Entrar', (tester) async {
     await pumpLogin(tester);
 
-    expect(find.text('Nome'), findsOneWidget);
     expect(find.text('E-mail'), findsOneWidget);
+    expect(find.text('Senha'), findsOneWidget);
     expect(find.text('Entrar'), findsOneWidget);
+  });
+
+  // Sem essas saidas o usuario novo fica sem caminho: era o estado da tela antes
+  // de existirem cadastro e login social.
+  testWidgets('login screen oferece cadastro e login social', (tester) async {
+    await pumpLogin(tester);
+
+    expect(find.text('Criar conta'), findsOneWidget);
+    expect(find.text('Continuar com Google'), findsOneWidget);
   });
 
   // Regressao: a Column do formulario usa CrossAxisAlignment.stretch, o que dava

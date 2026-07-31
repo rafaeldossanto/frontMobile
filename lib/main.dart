@@ -8,6 +8,7 @@ import 'core/router/app_router.dart';
 import 'core/storage/token_storage.dart';
 import 'features/auth/data/auth_api.dart';
 import 'features/auth/data/auth_repository.dart';
+import 'features/auth/data/social_sign_in.dart';
 import 'features/auth/presentation/auth_provider.dart';
 import 'features/adventure/data/adventure_api.dart';
 import 'features/adventure/presentation/adventure_provider.dart';
@@ -26,7 +27,7 @@ Future<void> main() async {
   final tokenStorage = TokenStorage();
   final dioClient = DioClient(tokenStorage);
   final authRepository = AuthRepository(AuthApi(dioClient.dio), tokenStorage);
-  final authProvider = AuthProvider(authRepository);
+  final authProvider = AuthProvider(authRepository, SocialSignIn());
   await authProvider.bootstrap();
 
   // Router created once, outside build, listening to AuthProvider.
@@ -38,6 +39,8 @@ Future<void> main() async {
         Provider<DioClient>.value(value: dioClient),
         // O socket do ao vivo precisa do token cru (Bearer no CONNECT do STOMP).
         Provider<TokenStorage>.value(value: tokenStorage),
+        // A tela de cadastro monta o proprio SignUpProvider a partir dele.
+        Provider<AuthRepository>.value(value: authRepository),
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
         ChangeNotifierProvider<AdventureProvider>(
           create: (_) => AdventureProvider(AdventureApi(dioClient.dio)),
