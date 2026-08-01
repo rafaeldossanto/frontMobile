@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -27,10 +28,47 @@ class TrackingScreen extends StatefulWidget {
 }
 
 class _TrackingScreenState extends State<TrackingScreen> {
-  static const _locationSettings = LocationSettings(
-    accuracy: LocationAccuracy.high,
-    distanceFilter: 5,
-  );
+  /// Gravacao continua a valer com a tela apagada e o app em segundo plano —
+  /// caminhada de trilha acontece com o celular no bolso.
+  ///
+  /// No Android isso exige um foreground service de tipo 'location': a
+  /// notificacao permanente e o que autoriza o app a seguir recebendo GPS fora
+  /// da tela. Sem ela o sistema corta o stream em segundos e o percurso fica
+  /// com buracos.
+  ///
+  /// No iOS o equivalente e `allowBackgroundLocationUpdates`, que depende do
+  /// background mode 'location' no Info.plist.
+  static LocationSettings get _locationSettings {
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return AndroidSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 5,
+        foregroundNotificationConfig: const ForegroundNotificationConfig(
+          notificationTitle: 'Trilha em andamento',
+          notificationText: 'Registrando seu percurso',
+          notificationIcon: AndroidResource(name: 'ic_launcher', defType: 'mipmap'),
+          enableWakeLock: true,
+        ),
+      );
+    }
+
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return AppleSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 5,
+        allowBackgroundLocationUpdates: true,
+        // Mantem o indicador azul de localizacao ativa na barra de status:
+        // o usuario precisa perceber que a trilha continua sendo gravada.
+        showBackgroundLocationIndicator: true,
+        pauseLocationUpdatesAutomatically: false,
+      );
+    }
+
+    return const LocationSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 5,
+    );
+  }
 
   /// Opcoes de visibilidade do acompanhamento ao vivo (contrato do BFF).
   static const _visibilityOptions = [
@@ -174,6 +212,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
     }
   }
 
+  /// Aceitar `whileInUse` e deliberado: o foreground service configurado em
+  /// [_locationSettings] mantem a gravacao viva em segundo plano com essa
+  /// permissao. Exigir `always` (ACCESS_BACKGROUND_LOCATION) so adicionaria
+  /// atrito — o usuario teria de habilitar na mao nas configuracoes do sistema.
   Future<bool> _ensurePermission() async {
     if (!await Geolocator.isLocationServiceEnabled()) {
       return false;
